@@ -125,7 +125,7 @@ class Analytics(Base):
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     character_id = Column(Integer, ForeignKey("characters.id"), nullable=True, index=True)
     event_type = Column(String)  # character_view, character_chat, character_created, character_exported
-    metadata = Column(String)  # JSON string with additional data
+    analytics_metadata = Column(String)  # JSON string with additional data
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("User", back_populates="analytics")
