@@ -251,6 +251,6 @@ if user_input:
 
 else:
 
-st.info(
-    "Create a character from the sidebar to begin."
+  st.info(
+     "Create a character from the sidebar to begin."
 )
