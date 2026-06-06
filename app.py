@@ -197,7 +197,19 @@ with col1:
             image = Image.open(
                 BytesIO(response.content)
             )
+st.write("Genre:", genre)
+st.write("Personality:", personality)
+st.write("Powers:", powers)
 
+image_prompt = urllib.parse.quote(
+f"{genre} character portrait, {personality}, {powers}"
+)
+
+image_url = (
+f"https://image.pollinations.ai/prompt/{image_prompt}"
+)
+
+st.write(image_ur
             st.image(
                 image,
                 caption="🎨 AI Character Portrait",
@@ -225,9 +237,11 @@ with col2:
         st.session_state.character
     )
 
+if st.session_state.character:
+
 st.download_button(
     label="📥 Download Character",
-    data=st.session_state.character,
+    data=str(st.session_state.character),
     file_name="character.txt",
     mime="text/plain"
 )
