@@ -8,5 +8,4 @@ requests
 plotly
 pandas
 numpy
-pydantic
 streamlit-authenticator
