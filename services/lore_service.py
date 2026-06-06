@@ -1,139 +1,116 @@
-import chromadb
-from sentence_transformers import SentenceTransformer
-import json
+from sqlalchemy import or_
+from database.db import SessionLocal, LoreEntry
 from typing import List, Dict
 
-# Initialize ChromaDB client for lore/RAG
-chroma_client = chromadb.Client()
-
-# Initialize sentence transformer for embeddings
-try:
-    embedder = SentenceTransformer('all-MiniLM-L6-v2')
-except:
-    embedder = None
-
-def get_or_create_lore_collection(character_id: int):
-    """Get or create a lore collection for a character."""
-    collection_name = f"lore_character_{character_id}"
-    return chroma_client.get_or_create_collection(
-        name=collection_name,
-        metadata={"hnsw:space": "cosine"}
-    )
 
 def store_lore_entry(character_id: int, lore_type: str, title: str, content: str):
     """
-    Store a lore entry in ChromaDB.
-    
-    Args:
-        character_id: Character ID
-        lore_type: Type of lore (world_history, city, kingdom, artifact, war, character)
-        title: Title of the lore entry
-        content: Content of the lore entry
+    Store a lore entry in the relational database.
     """
-    collection = get_or_create_lore_collection(character_id)
-    
-    lore_entry = {
-        "type": lore_type,
-        "title": title,
-        "character_id": character_id,
-        "timestamp": str(__import__('datetime').datetime.utcnow().isoformat())
-    }
-    
-    entry_id = f"{lore_type}_{character_id}_{len(collection.get()['ids']) + 1}"
-    
-    collection.add(
-        documents=[content],
-        metadatas=[lore_entry],
-        ids=[entry_id]
-    )
-    
-    return entry_id
+    session = SessionLocal()
+    try:
+        entry = LoreEntry(
+            character_id=character_id,
+            lore_type=lore_type,
+            title=title,
+            content=content
+        )
+        session.add(entry)
+        session.commit()
+        session.refresh(entry)
+        return entry.id
+    except Exception:
+        session.rollback()
+        return None
+    finally:
+        session.close()
+
 
 def query_lore(character_id: int, query: str, n_results: int = 5) -> List[Dict]:
     """
-    Query the lore knowledge base using semantic search.
-    
-    Args:
-        character_id: Character ID
-        query: Search query
-        n_results: Number of results to return
-    
-    Returns:
-        List of relevant lore entries
+    Query lore entries by title or content matching the query.
     """
+    session = SessionLocal()
     try:
-        collection = get_or_create_lore_collection(character_id)
-        results = collection.query(
-            query_texts=[query],
-            n_results=min(n_results, 5)
+        results = (
+            session.query(LoreEntry)
+            .filter(
+                LoreEntry.character_id == character_id,
+                or_(LoreEntry.content.contains(query), LoreEntry.title.contains(query))
+            )
+            .order_by(LoreEntry.created_at.desc())
+            .limit(n_results)
+            .all()
         )
-        
-        lore_entries = []
-        if results and results['documents']:
-            for i, doc in enumerate(results['documents'][0]):
-                entry = {
-                    "content": doc,
-                    "metadata": results['metadatas'][0][i] if results['metadatas'] else {}
+        return [
+            {
+                "content": entry.content,
+                "metadata": {
+                    "title": entry.title,
+                    "type": entry.lore_type,
+                    "created_at": entry.created_at.isoformat()
                 }
-                lore_entries.append(entry)
-        
-        return lore_entries
-    except:
-        return []
+            }
+            for entry in results
+        ]
+    finally:
+        session.close()
+
 
 def get_all_lore(character_id: int) -> List[Dict]:
     """Get all lore entries for a character."""
+    session = SessionLocal()
     try:
-        collection = get_or_create_lore_collection(character_id)
-        results = collection.get()
-        
-        lore_entries = []
-        if results and results['documents']:
-            for i, doc in enumerate(results['documents']):
-                entry = {
-                    "content": doc,
-                    "metadata": results['metadatas'][i] if results['metadatas'] else {}
+        results = (
+            session.query(LoreEntry)
+            .filter(LoreEntry.character_id == character_id)
+            .order_by(LoreEntry.created_at.desc())
+            .all()
+        )
+        return [
+            {
+                "content": entry.content,
+                "metadata": {
+                    "title": entry.title,
+                    "type": entry.lore_type,
+                    "created_at": entry.created_at.isoformat()
                 }
-                lore_entries.append(entry)
-        
-        return lore_entries
-    except:
-        return []
+            }
+            for entry in results
+        ]
+    finally:
+        session.close()
+
 
 def format_lore_for_context(lore_entries: List[Dict]) -> str:
     """Format lore entries into context string."""
     if not lore_entries:
         return ""
-    
+
     context = "\n**World Knowledge & Lore:**\n"
     for entry in lore_entries:
-        if isinstance(entry, dict) and 'content' in entry:
-            title = entry.get('metadata', {}).get('title', 'Entry')
-            context += f"- **{title}**: {entry['content']}\n"
-        else:
-            context += f"- {entry}\n"
-    
+        title = entry.get("metadata", {}).get("title", "Entry")
+        context += f"- **{title}**: {entry['content']}\n"
     return context
 
+
 def clear_lore(character_id: int) -> bool:
-    """Clear all lore for a character."""
+    """Clear all lore entries for a character."""
+    session = SessionLocal()
     try:
-        collection_name = f"lore_character_{character_id}"
-        chroma_client.delete_collection(name=collection_name)
+        session.query(LoreEntry).filter(LoreEntry.character_id == character_id).delete()
+        session.commit()
         return True
-    except:
+    except Exception:
+        session.rollback()
         return False
+    finally:
+        session.close()
+
 
 def build_rag_context(character_id: int, user_query: str) -> str:
     """
     Build RAG context by retrieving relevant lore for a query.
-    
-    Args:
-        character_id: Character ID
-        user_query: User's question/query
-    
-    Returns:
-        Formatted context string
     """
     lore_entries = query_lore(character_id, user_query, n_results=5)
     return format_lore_for_context(lore_entries)

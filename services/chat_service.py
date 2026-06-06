@@ -3,7 +3,7 @@ import os
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-def chat_with_character(character_content, user_message, conversation_history=None):
+def chat_with_character(character_content, user_message, conversation_history=None, memory_context=None):
     """
     Chat with a character staying in role.
     
@@ -11,15 +11,16 @@ def chat_with_character(character_content, user_message, conversation_history=No
         character_content: The character description/details
         user_message: The user's input message
         conversation_history: List of previous messages for context
+        memory_context: Optional memory context string to include in prompt
     
     Returns:
         The character's response
     """
     
+    prompt_memory = f"\nPrevious Memories:\n{memory_context}\n" if memory_context else ""
     system_prompt = f"""You are the following character:
 
-{character_content}
-
+{character_content}{prompt_memory}
 **IMPORTANT RULES:**
 1. Stay in character at all times
 2. Never break role

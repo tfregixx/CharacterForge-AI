@@ -1,6 +1,5 @@
 streamlit
 groq
-chromadb
 sqlalchemy
 python-dotenv
 pillow
@@ -12,6 +11,11 @@ fastapi
 uvicorn
 psycopg2-binary
 redis
+peft
+safetensors
+controlnet-aux
+opencv-python
+realesrgan
 networkx
 plotly
 pandas

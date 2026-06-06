@@ -1,6 +1,6 @@
 # CharacterForge AI 🎭
 
-An enterprise-grade AI-powered character generation and interaction platform built with Streamlit, FastAPI, Groq, ChromaDB, and cloud infrastructure.
+An enterprise-grade AI-powered character generation and interaction platform built with Streamlit, FastAPI, Groq, SQLite, and cloud infrastructure.
 
 ## 🌟 Features Overview
 
@@ -9,7 +9,7 @@ An enterprise-grade AI-powered character generation and interaction platform bui
 - 💾 **Character Persistence** - SQLite/PostgreSQL database
 - 📚 **Character Gallery** - Browse and manage characters
 - 💬 **Interactive Chat** - Real-time conversations with characters
-- 🧠 **Character Memory** - Semantic memory system with ChromaDB
+- 🧠 **Character Memory** - SQLite-backed character memory system
 - 🎨 **Image Generation** - AI-powered character portraits
 - 📥 **Export System** - JSON, TXT, PDF export
 - 🎨 **Professional UI** - Dark fantasy theme with Streamlit
@@ -39,7 +39,7 @@ An enterprise-grade AI-powered character generation and interaction platform bui
 
 #### **Phase 14: RAG Lore System** ✅
 - Knowledge base for world-building
-- Semantic search with ChromaDB
+- Context-aware recall with SQLite-backed memory
 - Lore types: World History, Cities, Kingdoms, Artifacts, Wars, Characters
 - Context-aware character responses
 
@@ -124,8 +124,8 @@ An enterprise-grade AI-powered character generation and interaction platform bui
     ┌────────────┼──────────────┐
     │            │              │
 ┌───▼────────┐  ┌┴─────────┐  ┌┴──────────┐
-│PostgreSQL  │  │  Redis   │  │ ChromaDB  │
-│  (RDS)     │  │  Cache   │  │ Vector DB │
+│PostgreSQL  │  │  Redis   │  │ SQLite    │
+│  (RDS)     │  │  Cache   │  │ Local DB  │
 └────────────┘  └──────────┘  └───────────┘
                  │
             ┌────▼─────┐
@@ -148,7 +148,7 @@ CharacterForge-AI/
 ├── services/
 │   ├── character_generator.py        # Groq character generation
 │   ├── chat_service.py               # Interactive chat
-│   ├── memory_service.py             # ChromaDB memory
+│   ├── memory_service.py             # SQLite-backed memory
 │   ├── lore_service.py               # RAG/Lore system
 │   ├── cache_service.py              # Redis caching
 │   ├── auth_service.py               # Authentication utilities
@@ -257,7 +257,7 @@ Key packages:
 - `streamlit` - Frontend
 - `fastapi` - Backend API
 - `groq` - LLM provider
-- `chromadb` - Vector database
+- `sqlalchemy` - ORM for SQLite and relational storage
 - `sqlalchemy` - ORM
 - `psycopg2-binary` - PostgreSQL adapter
 - `redis` - Caching
@@ -429,7 +429,7 @@ The deployment creates:
 - [Streamlit Docs](https://docs.streamlit.io/)
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
 - [Groq API](https://console.groq.com/docs)
-- [ChromaDB](https://docs.trychroma.com/)
+- [SQLite](https://www.sqlite.org/docs.html)
 - [SQLAlchemy](https://docs.sqlalchemy.org/)
 - [Redis](https://redis.io/docs/)
 - [Diffusers](https://huggingface.co/docs/diffusers)

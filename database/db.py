@@ -6,13 +6,13 @@ import os
 from typing import Optional
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///characters.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///characterforge.db")
 
-# Auto-configure for PostgreSQL
-if "postgresql" in DATABASE_URL:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True, echo=False)
+# Auto-configure engine
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
 else:
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True, echo=False)
 
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
@@ -95,7 +95,7 @@ class LoreEntry(Base):
     lore_type = Column(String)  # world_history, city, kingdom, artifact, war, etc.
     title = Column(String)
     content = Column(Text)
-    embedding_vector = Column(String)  # Store as JSON string for ChromaDB integration
+    embedding_vector = Column(String)  # Optional vector embedding metadata
     created_at = Column(DateTime, default=datetime.utcnow)
     
     character = relationship("Character", back_populates="lore")
@@ -132,8 +132,23 @@ class Analytics(Base):
     character = relationship("Character", back_populates="analytics")
 
 
+# ==================== Memory Models ====================
+
+class Memory(Base):
+    __tablename__ = "memories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    character_name = Column(String, nullable=False, index=True)
+    memory = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 # Create all tables
 Base.metadata.create_all(bind=engine)
+
+def init_db():
+    """Initialize database schema."""
+    Base.metadata.create_all(bind=engine)
 
 
 # ==================== Database Functions ====================
