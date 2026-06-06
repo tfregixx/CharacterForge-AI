@@ -12,22 +12,7 @@ def generate_character(prompt):
         messages=[
             {
                 "role": "user",
-                "content":
-                f"""
-                Generate a detailed fictional character.
-
-                {prompt}
-
-                Include:
-
-                Name
-                Age
-                Backstory
-                Powers
-                Weaknesses
-                Personality
-                Catchphrase
-                """
+                "content": prompt
             }
         ]
     )
