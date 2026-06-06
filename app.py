@@ -156,7 +156,6 @@ if st.session_state.character:
 
 st.subheader("Character Profile")
 
-
 image_prompt = urllib.parse.quote(
     f"""
     {genre} character portrait,
@@ -208,7 +207,7 @@ with col1:
                 "Portrait generation unavailable"
             )
 
-    except Exception as e:
+    except Exception:
 
         st.warning(
             "Unable to load portrait"
