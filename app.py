@@ -5,159 +5,80 @@ import urllib.parse
 from dotenv import load_dotenv
 from groq import Groq
 
+# -----------------------------
+# CONFIG
+# -----------------------------
+
 load_dotenv()
 
-# ----------------------------------
-
-# PAGE CONFIG
-
-# ----------------------------------
-
 st.set_page_config(
-page_title="CharacterForge AI",
-page_icon="🎭",
-layout="wide"
+    page_title="CharacterForge AI",
+    page_icon="🎭",
+    layout="wide"
 )
-
-# ----------------------------------
-
-# GROQ CLIENT
-
-# ----------------------------------
 
 client = Groq(
-api_key=os.getenv("GROQ_API_KEY")
+    api_key=os.getenv("GROQ_API_KEY")
 )
-
-# ----------------------------------
-
-# DATABASE
-
-# ----------------------------------
 
 DB_NAME = "characterforge.db"
 
+# -----------------------------
+# DATABASE
+# -----------------------------
+
 def init_db():
-conn = sqlite3.connect(DB_NAME)
-cursor = conn.cursor()
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS characters(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT
+    )
+    """)
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS characters(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    content TEXT
-)
-""")
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS memories(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    memory TEXT
-)
-""")
-
-conn.commit()
-conn.close()
-
+    conn.commit()
+    conn.close()
 
 init_db()
-
-# ----------------------------------
-
-# CHARACTER STORAGE
-
-# ----------------------------------
 
 def save_character(content):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
+    cursor.execute(
+        "INSERT INTO characters(content) VALUES(?)",
+        (content,)
+    )
 
-cursor.execute(
-    "INSERT INTO characters(content) VALUES(?)",
-    (content,)
-)
-
-conn.commit()
-conn.close()
-
+    conn.commit()
+    conn.close()
 
 def get_characters():
-conn = sqlite3.connect(DB_NAME)
-cursor = conn.cursor()
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
 
+    cursor.execute(
+        "SELECT id, content FROM characters ORDER BY id DESC"
+    )
 
-cursor.execute(
-    "SELECT id, content FROM characters ORDER BY id DESC"
-)
+    rows = cursor.fetchall()
 
-rows = cursor.fetchall()
+    conn.close()
 
-conn.close()
+    return rows
 
-return rows
-
-
-# ----------------------------------
-
-# MEMORY
-
-# ----------------------------------
-
-def store_memory(memory):
-conn = sqlite3.connect(DB_NAME)
-cursor = conn.cursor()
-
-
-cursor.execute(
-    "INSERT INTO memories(memory) VALUES(?)",
-    (memory,)
-)
-
-conn.commit()
-conn.close()
-
-
-def retrieve_memories(limit=10):
-conn = sqlite3.connect(DB_NAME)
-cursor = conn.cursor()
-
-
-cursor.execute(
-    "SELECT memory FROM memories ORDER BY id DESC LIMIT ?",
-    (limit,)
-)
-
-rows = cursor.fetchall()
-
-conn.close()
-
-return [row[0] for row in rows]
-
-
-def clear_memories():
-conn = sqlite3.connect(DB_NAME)
-cursor = conn.cursor()
-
-
-cursor.execute("DELETE FROM memories")
-
-conn.commit()
-conn.close()
-
-
-# ----------------------------------
-
-# CHARACTER GENERATION
-
-# ----------------------------------
+# -----------------------------
+# AI FUNCTIONS
+# -----------------------------
 
 def generate_character(
-genre,
-personality,
-powers
+    genre,
+    personality,
+    powers
 ):
-prompt = f"""
+    prompt = f"""
 Create a detailed fictional character.
 
 Genre: {genre}
@@ -178,269 +99,208 @@ Catchphrase
 Format clearly in markdown.
 """
 
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    )
 
-response = client.chat.completions.create(
-    model="llama-3.3-70b-versatile",
-    messages=[
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ],
-    temperature=0.9
-)
-
-return response.choices[0].message.content
-
-
-# ----------------------------------
-
-# CHARACTER CHAT
-
-# ----------------------------------
+    return response.choices[0].message.content
 
 def chat_with_character(
-character_profile,
-memory_context,
-user_message
+    profile,
+    user_message
 ):
-prompt = f"""
-You are the character below.
+    prompt = f"""
+You are this character.
 
-Stay completely in character.
-
-Character Profile:
-{character_profile}
-
-Memory:
-{memory_context}
+Character:
+{profile}
 
 User:
 {user_message}
 
-Reply as the character.
+Reply only as the character.
 """
 
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    )
 
-response = client.chat.completions.create(
-    model="llama-3.3-70b-versatile",
-    messages=[
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ],
-    temperature=0.8
-)
+    return response.choices[0].message.content
 
-return response.choices[0].message.content
-
-
-# ----------------------------------
-
+# -----------------------------
 # SESSION STATE
-
-# ----------------------------------
+# -----------------------------
 
 if "character" not in st.session_state:
-st.session_state.character = None
+    st.session_state.character = None
 
 if "chat_history" not in st.session_state:
-st.session_state.chat_history = []
+    st.session_state.chat_history = []
 
-# ----------------------------------
-
+# -----------------------------
 # SIDEBAR
-
-# ----------------------------------
+# -----------------------------
 
 with st.sidebar:
 
+    st.header("Create Character")
 
-st.header("Create Character")
-
-genre = st.selectbox(
-    "Genre",
-    [
-        "Fantasy",
-        "Sci-Fi",
-        "Anime",
-        "Cyberpunk"
-    ]
-)
-
-personality = st.text_input(
-    "Personality",
-    "Brave and mysterious"
-)
-
-powers = st.text_input(
-    "Powers",
-    "Shadow Magic"
-)
-
-if st.button("Generate Character"):
-
-    character = generate_character(
-        genre,
-        personality,
-        powers
+    genre = st.selectbox(
+        "Genre",
+        [
+            "Fantasy",
+            "Sci-Fi",
+            "Anime",
+            "Cyberpunk"
+        ]
     )
 
-    st.session_state.character = character
-    st.session_state.chat_history = []
+    personality = st.text_input(
+        "Personality",
+        "Brave and mysterious"
+    )
 
-    st.success("Character Generated!")
+    powers = st.text_input(
+        "Powers",
+        "Shadow Magic"
+    )
 
-st.divider()
+    if st.button("Generate Character"):
 
-st.subheader("Saved Characters")
+        character = generate_character(
+            genre,
+            personality,
+            powers
+        )
 
-characters = get_characters()
+        st.session_state.character = character
+        st.session_state.chat_history = []
 
-for char_id, content in characters:
+        st.success("Character Generated!")
 
-    if st.button(f"Character {char_id}"):
+    st.divider()
 
-        st.session_state.character = content
-```
+    st.subheader("Saved Characters")
 
-# ----------------------------------
+    for char_id, content in get_characters():
 
+        if st.button(f"Character {char_id}"):
+
+            st.session_state.character = content
+
+# -----------------------------
 # MAIN PAGE
-
-# ----------------------------------
+# -----------------------------
 
 st.title("🎭 CharacterForge AI")
 st.caption(
-"Generate, chat, save and manage AI characters"
+    "Generate, chat, and manage AI characters"
 )
 
 if st.session_state.character:
 
+    st.subheader("Character Profile")
 
-st.subheader("Character Profile")
-
-image_prompt = urllib.parse.quote(
-    f"""
-
-
-Fantasy RPG character portrait,
+    image_prompt = urllib.parse.quote(
+        f"""
+fantasy character portrait,
 {st.session_state.character[:500]},
 highly detailed,
 cinematic lighting,
-fantasy concept art,
+fantasy art,
 masterpiece,
-ultra detailed face,
 4k
 """
-)
-
-
-image_url = (
-    f"https://image.pollinations.ai/prompt/{image_prompt}"
-)
-
-col1, col2 = st.columns([1, 2])
-
-with col1:
-
-    st.image(
-        image_url,
-        caption="🎨 AI Generated Character Portrait",
-        use_container_width=True
     )
 
-with col2:
-
-    st.markdown(
-        st.session_state.character
+    image_url = (
+        f"https://image.pollinations.ai/prompt/{image_prompt}"
     )
 
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 2])
 
-with col1:
+    with col1:
 
-    if st.button("💾 Save Character"):
+        st.image(
+            image_url,
+            caption="🎨 AI Generated Portrait",
+            use_container_width=True
+        )
 
-        save_character(
+    with col2:
+
+        st.markdown(
             st.session_state.character
         )
 
-        st.success(
-            "Character Saved!"
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        if st.button("💾 Save Character"):
+
+            save_character(
+                st.session_state.character
+            )
+
+            st.success(
+                "Character Saved!"
+            )
+
+    with col2:
+
+        st.download_button(
+            label="📥 Download Character",
+            data=st.session_state.character,
+            file_name="character.txt",
+            mime="text/plain"
         )
 
-with col2:
+    st.divider()
 
-    st.download_button(
-        label="📥 Download Character",
-        data=st.session_state.character,
-        file_name="character.txt",
-        mime="text/plain"
+    st.subheader("💬 Chat With Character")
+
+    for role, message in st.session_state.chat_history:
+
+        with st.chat_message(role):
+
+            st.markdown(message)
+
+    user_input = st.chat_input(
+        "Talk to your character..."
     )
 
-st.divider()
+    if user_input:
 
-st.subheader("💬 Chat With Character")
+        response = chat_with_character(
+            st.session_state.character,
+            user_input
+        )
 
-for role, message in st.session_state.chat_history:
+        st.session_state.chat_history.append(
+            ("user", user_input)
+        )
 
-    with st.chat_message(role):
+        st.session_state.chat_history.append(
+            ("assistant", response)
+        )
 
-        st.markdown(message)
-
-user_input = st.chat_input(
-    "Talk to your character..."
-)
-
-if user_input:
-
-    memories = retrieve_memories()
-
-    memory_context = "\n".join(
-        memories
-    )
-
-    response = chat_with_character(
-        st.session_state.character,
-        memory_context,
-        user_input
-    )
-
-    store_memory(
-        f"User: {user_input}"
-    )
-
-    store_memory(
-        f"AI: {response}"
-    )
-
-    st.session_state.chat_history.append(
-        ("user", user_input)
-    )
-
-    st.session_state.chat_history.append(
-        ("assistant", response)
-    )
-
-    st.rerun()
-
-if st.button("🗑 Clear Memory"):
-
-    clear_memories()
-
-    st.session_state.chat_history = []
-
-    st.success(
-        "Memory Cleared"
-    )
-
+        st.rerun()
 
 else:
 
-
-st.info(
-    "Create a character from the sidebar to begin."
-)
-
+    st.info(
+        "Create a character from the sidebar to begin."
+    )
