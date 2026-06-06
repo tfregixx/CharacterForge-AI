@@ -10,13 +10,3 @@ pandas
 numpy
 pydantic
 streamlit-authenticator
-fastapi
-uvicorn
-psycopg2-binary
-redis
-networkx
-python-multipart
-PyJWT
-passlib[bcrypt]
-python-jose[cryptography]
-bcrypt
