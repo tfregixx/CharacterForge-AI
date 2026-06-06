@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CharacterForge AI - ElastiCache Redis'
+
+Parameters:
+  CacheNodeType:
+    Type: String
+    Default: cache.t3.micro
+
+Resources:
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnet group for CharacterForge Redis
+      SubnetIds:
+        - subnet-12345678
+        - subnet-87654321
+
+  CharacterForgeRedis:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      CacheClusterId: characterforge-redis
+      CacheNodeType: !Ref CacheNodeType
+      Engine: redis
+      EngineVersion: '7.0'
+      NumCacheNodes: 1
+      VpcSecurityGroupIds:
+        - sg-12345678
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      AutomaticFailoverEnabled: true
+      MultiAZEnabled: true
+      Tags:
+        - Key: Name
+          Value: characterforge-redis
+
+Outputs:
+  RedisEndpoint:
+    Value: !GetAtt CharacterForgeRedis.RedisEndpoint.Address
+    Export:
+      Name: CharacterForgeRedisEndpoint
+  
+  RedisPort:
+    Value: !GetAtt CharacterForgeRedis.RedisEndpoint.Port
+    Export:
+      Name: CharacterForgeRedisPort

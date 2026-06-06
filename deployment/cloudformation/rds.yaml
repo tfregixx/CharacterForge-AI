@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CharacterForge AI - RDS PostgreSQL Database'
+
+Parameters:
+  DBName:
+    Type: String
+    Default: characterforge
+  DBUser:
+    Type: String
+    Default: postgres
+  DBPassword:
+    Type: String
+    NoEcho: true
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for CharacterForge database
+      SubnetIds:
+        - subnet-12345678
+        - subnet-87654321
+
+  CharacterForgeDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: characterforge-db
+      DBInstanceClass: !Ref DBInstanceClass
+      Engine: postgres
+      EngineVersion: '15.3'
+      MasterUsername: !Ref DBUser
+      MasterUserPassword: !Ref DBPassword
+      AllocatedStorage: 20
+      StorageType: gp3
+      DBName: !Ref DBName
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - sg-12345678
+      BackupRetentionPeriod: 7
+      MultiAZ: true
+      StorageEncrypted: true
+      EnableCloudwatchLogsExports:
+        - postgresql
+      Tags:
+        - Key: Name
+          Value: characterforge-db
+
+Outputs:
+  DBEndpoint:
+    Value: !GetAtt CharacterForgeDB.Endpoint.Address
+    Export:
+      Name: CharacterForgeDBEndpoint
+  
+  DBPort:
+    Value: !GetAtt CharacterForgeDB.Endpoint.Port
+    Export:
+      Name: CharacterForgeDBPort

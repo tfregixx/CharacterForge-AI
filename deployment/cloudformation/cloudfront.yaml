@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CharacterForge AI - CloudFront Distribution'
+
+Parameters:
+  S3Bucket:
+    Type: String
+    Description: S3 bucket for assets
+
+Resources:
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: CharacterForge AI CloudFront Distribution
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2and3
+        
+        Origins:
+          - Id: S3Origin
+            DomainName: !Sub '${S3Bucket}.s3.${AWS::Region}.amazonaws.com'
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+          
+          - Id: EC2Origin
+            DomainName: characterforge-instance.example.com
+            CustomOriginConfig:
+              HTTPPort: 8501
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          DefaultTTL: 3600
+          MaxTTL: 86400
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          ForwardedValues:
+            QueryString: false
+
+        CacheBehaviors:
+          - PathPattern: '/api/*'
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - POST
+              - PATCH
+              - DELETE
+            CachedMethods:
+              - GET
+              - HEAD
+            DefaultTTL: 0
+            MaxTTL: 0
+            TargetOriginId: EC2Origin
+            ViewerProtocolPolicy: https-only
+            ForwardedValues:
+              QueryString: true
+              Headers:
+                - Authorization
+                - Content-Type
+
+          - PathPattern: '/stream/*'
+            AllowedMethods:
+              - GET
+              - HEAD
+            DefaultTTL: 0
+            MaxTTL: 0
+            TargetOriginId: EC2Origin
+            ViewerProtocolPolicy: https-only
+            ForwardedValues:
+              QueryString: true
+
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        
+        Logging:
+          Bucket: !Sub '${S3Bucket}.s3.${AWS::Region}.amazonaws.com'
+          Prefix: cloudfront-logs/
+          IncludeCookies: false
+        
+        Tags:
+          - Key: Name
+            Value: characterforge-cdn
+
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: OAI for CharacterForge AI
+
+Outputs:
+  DistributionId:
+    Value: !Ref CloudFrontDistribution
+    Export:
+      Name: CharacterForgeDistributionId
+  
+  DistributionDomain:
+    Value: !GetAtt CloudFrontDistribution.DomainName
+    Export:
+      Name: CharacterForgeDistributionDomain
