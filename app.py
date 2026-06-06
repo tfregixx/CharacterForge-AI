@@ -154,72 +154,114 @@ st.caption(
 
 if st.session_state.character:
 
-    st.subheader("Character Profile")
+st.subheader("Character Profile")
 
-    image_prompt = urllib.parse.quote(
-        f"fantasy character portrait, {genre}, {personality}, {powers}, highly detailed, digital art, cinematic lighting"
-    )
 
-    image_url = (
-        f"https://image.pollinations.ai/prompt/{image_prompt}"
-    )
+image_prompt = urllib.parse.quote(
+    f"""
+    {genre} character portrait,
+    {personality},
+    {powers},
+    fantasy concept art,
+    highly detailed face,
+    cinematic lighting,
+    professional digital painting,
+    masterpiece,
+    ultra realistic,
+    4k
+    """
+)
 
-    col1, col2 = st.columns([1, 2])
+image_url = (
+    f"https://image.pollinations.ai/prompt/{image_prompt}"
+    f"?width=512"
+    f"&height=512"
+    f"&model=flux"
+)
 
-    with col1:
+col1, col2 = st.columns([1, 2])
 
-        st.image(
+with col1:
+
+    try:
+
+        response = requests.get(
             image_url,
-            caption="🎨 Character Portrait",
-            use_container_width=True
+            timeout=60
         )
 
-    with col2:
+        if response.status_code == 200:
 
-        st.markdown(
-            st.session_state.character
+            image = Image.open(
+                BytesIO(response.content)
+            )
+
+            st.image(
+                image,
+                caption="🎨 AI Character Portrait",
+                use_container_width=True
+            )
+
+        else:
+
+            st.warning(
+                "Portrait generation unavailable"
+            )
+
+    except Exception as e:
+
+        st.warning(
+            "Unable to load portrait"
         )
 
-    st.download_button(
-        label="📥 Download Character",
-        data=st.session_state.character,
-        file_name="character.txt",
-        mime="text/plain"
+    with st.expander("Debug Image URL"):
+        st.code(image_url)
+
+with col2:
+
+    st.markdown(
+        st.session_state.character
     )
 
-    st.divider()
+st.download_button(
+    label="📥 Download Character",
+    data=st.session_state.character,
+    file_name="character.txt",
+    mime="text/plain"
+)
 
-    st.subheader("💬 Chat With Character")
+st.divider()
 
-    for role, message in st.session_state.chat_history:
+st.subheader("💬 Chat With Character")
 
-        with st.chat_message(role):
-            st.markdown(message)
+for role, message in st.session_state.chat_history:
 
-    user_input = st.chat_input(
-        "Talk to your character..."
+    with st.chat_message(role):
+        st.markdown(message)
+
+user_input = st.chat_input(
+    "Talk to your character..."
+)
+
+if user_input:
+
+    response = chat_with_character(
+        st.session_state.character,
+        user_input
     )
 
-    if user_input:
+    st.session_state.chat_history.append(
+        ("user", user_input)
+    )
 
-        response = chat_with_character(
-            st.session_state.character,
-            user_input
-        )
+    st.session_state.chat_history.append(
+        ("assistant", response)
+    )
 
-        st.session_state.chat_history.append(
-            ("user", user_input)
-        )
-
-        st.session_state.chat_history.append(
-            ("assistant", response)
-        )
-
-        st.rerun()
+    st.rerun()
 
 else:
 
-    st.info(
-        "Create a character from the sidebar to begin."
-    )
-    
+st.info(
+    "Create a character from the sidebar to begin."
+)
