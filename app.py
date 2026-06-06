@@ -1,5 +1,8 @@
 import os
 import urllib.parse
+import requests
+from PIL import Image
+from io import BytesIO
 
 import streamlit as st
 from dotenv import load_dotenv
