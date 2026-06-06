@@ -69,8 +69,8 @@ init_db()
 # ----------------------------------
 
 def save_character(content):
-conn = sqlite3.connect(DB_NAME)
-cursor = conn.cursor()
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
 
 
 cursor.execute(
