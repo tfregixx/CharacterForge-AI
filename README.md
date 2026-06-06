@@ -459,11 +459,10 @@ MIT License - See [LICENSE](LICENSE) file
 
 - **Issues**: GitHub Issues
 - **Discussions**: GitHub Discussions
-- **Email**: support@characterforge.local
-- **Discord**: [Join Community](https://discord.gg/characterforge)
+- **Email**: preethiregina22prof@gmail.com
 
 ---
 
-**Made with 🎭 by CharacterForge AI Team**
+**Made by 🎭 by Preethi Regina Sundaram Dayalan**
 
 **Current Version**: 2.0.0 | **Last Updated**: 2026-06-06
