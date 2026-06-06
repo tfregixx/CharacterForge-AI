@@ -1,16 +1,18 @@
 import streamlit as st
+import sqlite3
+import os
+from groq import Groq
 from dotenv import load_dotenv
 
-from services.character_generator import generate_character
-from services.chat_service import chat_with_character
-from services.memory_service import (
-    store_memory,
-    retrieve_memories,
-    clear_memories,
-    format_memories_for_context
-)
+# -------------------------
+# CONFIG
+# -------------------------
 
 load_dotenv()
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 st.set_page_config(
     page_title="CharacterForge AI",
@@ -18,23 +20,204 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🎭 CharacterForge AI")
-st.caption("Generate, chat, and build fictional AI characters")
+# -------------------------
+# DATABASE
+# -------------------------
 
-# Session State
+def init_db():
+    conn = sqlite3.connect("characterforge.db")
+
+    c = conn.cursor()
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS characters (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS memories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# -------------------------
+# CHARACTER FUNCTIONS
+# -------------------------
+
+def save_character(content):
+
+    conn = sqlite3.connect("characterforge.db")
+
+    c = conn.cursor()
+
+    c.execute(
+        "INSERT INTO characters (content) VALUES (?)",
+        (content,)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def get_characters():
+
+    conn = sqlite3.connect("characterforge.db")
+
+    c = conn.cursor()
+
+    c.execute(
+        "SELECT id, content FROM characters ORDER BY id DESC"
+    )
+
+    rows = c.fetchall()
+
+    conn.close()
+
+    return rows
+
+
+# -------------------------
+# MEMORY FUNCTIONS
+# -------------------------
+
+def store_memory(text):
+
+    conn = sqlite3.connect("characterforge.db")
+
+    c = conn.cursor()
+
+    c.execute(
+        "INSERT INTO memories (memory) VALUES (?)",
+        (text,)
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def retrieve_memories():
+
+    conn = sqlite3.connect("characterforge.db")
+
+    c = conn.cursor()
+
+    c.execute(
+        "SELECT memory FROM memories ORDER BY id DESC LIMIT 10"
+    )
+
+    rows = c.fetchall()
+
+    conn.close()
+
+    return [row[0] for row in rows]
+
+
+def clear_memories():
+
+    conn = sqlite3.connect("characterforge.db")
+
+    c = conn.cursor()
+
+    c.execute("DELETE FROM memories")
+
+    conn.commit()
+    conn.close()
+
+
+# -------------------------
+# AI FUNCTIONS
+# -------------------------
+
+def generate_character(prompt):
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    )
+
+    return response.choices[0].message.content
+
+
+def chat_with_character(
+    profile,
+    memory_context,
+    user_message
+):
+
+    prompt = f"""
+Stay in character.
+
+Character Profile:
+{profile}
+
+Previous Memory:
+{memory_context}
+
+User:
+{user_message}
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    )
+
+    return response.choices[0].message.content
+
+
+# -------------------------
+# SESSION STATE
+# -------------------------
+
 if "character" not in st.session_state:
     st.session_state.character = None
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Sidebar
+# -------------------------
+# UI
+# -------------------------
+
+st.title("🎭 CharacterForge AI")
+st.caption(
+    "Generate, chat, save and manage AI characters"
+)
+
+# -------------------------
+# SIDEBAR
+# -------------------------
+
 with st.sidebar:
+
     st.header("Create Character")
 
     genre = st.selectbox(
         "Genre",
-        ["Fantasy", "Sci-Fi", "Anime", "Cyberpunk"]
+        [
+            "Fantasy",
+            "Sci-Fi",
+            "Anime",
+            "Cyberpunk"
+        ]
     )
 
     personality = st.text_input(
@@ -50,18 +233,23 @@ with st.sidebar:
     if st.button("Generate Character"):
 
         prompt = f"""
-        Genre: {genre}
-        Personality: {personality}
-        Powers: {powers}
+Genre: {genre}
 
-        Generate:
-        Name
-        Age
-        Backstory
-        Strengths
-        Weaknesses
-        Catchphrase
-        """
+Personality:
+{personality}
+
+Powers:
+{powers}
+
+Generate:
+
+Name
+Age
+Backstory
+Strengths
+Weaknesses
+Catchphrase
+"""
 
         character = generate_character(prompt)
 
@@ -70,49 +258,86 @@ with st.sidebar:
 
         st.success("Character Generated!")
 
-# Main Content
+    st.divider()
+
+    st.subheader("Saved Characters")
+
+    characters = get_characters()
+
+    for char_id, content in characters:
+
+        if st.button(f"Character {char_id}"):
+
+            st.session_state.character = content
+
+# -------------------------
+# MAIN
+# -------------------------
+
 if st.session_state.character:
 
     st.subheader("Character Profile")
 
-    st.markdown(st.session_state.character)
+    st.markdown(
+        st.session_state.character
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        if st.button("💾 Save Character"):
+
+            save_character(
+                st.session_state.character
+            )
+
+            st.success(
+                "Character Saved!"
+            )
+
+    with col2:
+
+        st.download_button(
+            label="📥 Download Character",
+            data=st.session_state.character,
+            file_name="character.txt",
+            mime="text/plain"
+        )
 
     st.divider()
 
-    st.subheader("Chat with Character")
+    st.subheader("Chat With Character")
+
+    for role, message in st.session_state.chat_history:
+
+        with st.chat_message(role):
+
+            st.markdown(message)
 
     user_input = st.chat_input(
         "Talk to your character..."
     )
 
-    for role, message in st.session_state.chat_history:
-
-        with st.chat_message(role):
-            st.markdown(message)
-
     if user_input:
 
-        character_name = "Character"
+        memories = retrieve_memories()
 
-        memories = retrieve_memories(character_name)
-
-        memory_context = format_memories_for_context(
+        memory_context = "\n".join(
             memories
         )
 
         response = chat_with_character(
-            character_profile=st.session_state.character,
-            memory_context=memory_context,
-            user_message=user_input
+            st.session_state.character,
+            memory_context,
+            user_input
         )
 
         store_memory(
-            character_name,
             f"User: {user_input}"
         )
 
         store_memory(
-            character_name,
             f"AI: {response}"
         )
 
@@ -126,13 +351,15 @@ if st.session_state.character:
 
         st.rerun()
 
-    if st.button("Clear Memory"):
+    if st.button("🗑 Clear Memory"):
 
-        clear_memories("Character")
+        clear_memories()
 
         st.session_state.chat_history = []
 
-        st.success("Memory Cleared")
+        st.success(
+            "Memory Cleared"
+        )
 
 else:
 
