@@ -197,19 +197,19 @@ with col1:
             image = Image.open(
                 BytesIO(response.content)
             )
-st.write("Genre:", genre)
-st.write("Personality:", personality)
-st.write("Powers:", powers)
+             st.write("Genre:", genre)
+             st.write("Personality:", personality)
+             st.write("Powers:", powers)
 
-image_prompt = urllib.parse.quote(
-f"{genre} character portrait, {personality}, {powers}"
+              image_prompt = urllib.parse.quote(
+                 f"{genre} character portrait, {personality}, {powers}"
 )
 
 image_url = (
 f"https://image.pollinations.ai/prompt/{image_prompt}"
 )
 
-st.write(image_ur
+            st.write(image_ur
             st.image(
                 image,
                 caption="🎨 AI Character Portrait",
