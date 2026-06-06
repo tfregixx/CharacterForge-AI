@@ -262,8 +262,8 @@ if user_input:
 
     st.rerun()
 
-else:
 
-st.info(
-    "Create a character from the sidebar to begin."
-)
+else:
+    st.info(
+        "Create a character from the sidebar to begin."
+    )
