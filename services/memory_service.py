@@ -1,58 +1,71 @@
-from sqlalchemy import text
-from database.db import engine
+import sqlite3
 
+DB_NAME = "characterforge.db"
 
-def store_memory(character_name, memory):
-    with engine.connect() as conn:
-        conn.execute(
-            text("""
-            INSERT INTO memories
-            (character_name, memory)
-            VALUES
-            (:character_name, :memory)
-            """),
-            {
-                "character_name": character_name,
-                "memory": memory
-            }
-        )
-        conn.commit()
+def store_memory(memory):
 
+```
+conn = sqlite3.connect(DB_NAME)
+cursor = conn.cursor()
 
-def retrieve_memories(character_name):
-    with engine.connect() as conn:
-        result = conn.execute(
-            text("""
-            SELECT memory
-            FROM memories
-            WHERE character_name=:character_name
-            ORDER BY id DESC
-            LIMIT 10
-            """),
-            {
-                "character_name": character_name
-            }
-        )
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS memories(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory TEXT
+    )
+""")
 
-        return [row[0] for row in result.fetchall()]
+cursor.execute(
+    "INSERT INTO memories(memory) VALUES(?)",
+    (memory,)
+)
 
+conn.commit()
+conn.close()
+```
+
+def retrieve_memories(limit=10):
+
+```
+conn = sqlite3.connect(DB_NAME)
+cursor = conn.cursor()
+
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS memories(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory TEXT
+    )
+""")
+
+cursor.execute(
+    "SELECT memory FROM memories ORDER BY id DESC LIMIT ?",
+    (limit,)
+)
+
+rows = cursor.fetchall()
+
+conn.close()
+
+return [row[0] for row in rows]
+```
 
 def format_memories_for_context(memories):
-    if not memories:
-        return ""
 
-    return "\n".join(memories)
+```
+if not memories:
+    return ""
 
+return "\n".join(memories)
+```
 
-def clear_memories(character_name):
-    with engine.connect() as conn:
-        conn.execute(
-            text("""
-            DELETE FROM memories
-            WHERE character_name=:character_name
-            """),
-            {
-                "character_name": character_name
-            }
-        )
-        conn.commit()
+def clear_memories():
+
+```
+conn = sqlite3.connect(DB_NAME)
+cursor = conn.cursor()
+
+cursor.execute("DELETE FROM memories")
+
+conn.commit()
+conn.close()
+```
