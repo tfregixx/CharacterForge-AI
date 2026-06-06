@@ -156,7 +156,7 @@ st.caption(
 
 if st.session_state.character:
 
-st.subheader("Character Profile")
+  st.subheader("Character Profile")
 
 image_prompt = urllib.parse.quote(
     f"{genre} character portrait, {personality}, {powers}, fantasy art, detailed face, cinematic lighting"
