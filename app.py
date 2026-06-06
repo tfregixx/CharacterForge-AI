@@ -278,9 +278,37 @@ if st.session_state.character:
 
     st.subheader("Character Profile")
 
-    st.markdown(
-        st.session_state.character
-    )
+import urllib.parse
+
+character_text = st.session_state.character
+
+prompt = urllib.parse.quote(
+    f"""
+    Fantasy RPG character portrait.
+
+    {character_text}
+
+    ultra detailed,
+    fantasy concept art,
+    cinematic lighting,
+    highly detailed face,
+    character sheet,
+    masterpiece,
+    4k
+    """
+)
+
+image_url = (
+    f"https://image.pollinations.ai/prompt/{prompt}"
+)
+
+st.image(
+    image_url,
+    caption="🎨 AI Generated Character Portrait",
+    use_container_width=True
+)
+
+st.markdown(character_text)
 
     col1, col2 = st.columns(2)
 
