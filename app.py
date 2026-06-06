@@ -149,36 +149,22 @@ with st.sidebar:
 # ------------------------
 # MAIN
 # ------------------------
-
 st.title("🎭 CharacterForge AI")
 st.caption(
-    "Generate, chat, and manage AI characters"
+"Generate, chat, and manage AI characters"
 )
 
 if st.session_state.character:
 
-    st.subheader("Character Profile")
+st.subheader("Character Profile")
 
 image_prompt = urllib.parse.quote(
-    f"""
-    {genre} character portrait,
-    {personality},
-    {powers},
-    fantasy concept art,
-    highly detailed face,
-    cinematic lighting,
-    professional digital painting,
-    masterpiece,
-    ultra realistic,
-    4k
-    """
+    f"{genre} character portrait, {personality}, {powers}, fantasy art, detailed face, cinematic lighting"
 )
 
 image_url = (
     f"https://image.pollinations.ai/prompt/{image_prompt}"
-    f"?width=512"
-    f"&height=512"
-    f"&model=flux"
+    f"?width=512&height=512"
 )
 
 col1, col2 = st.columns([1, 2])
@@ -189,7 +175,7 @@ with col1:
 
         response = requests.get(
             image_url,
-            timeout=60
+            timeout=30
         )
 
         if response.status_code == 200:
@@ -197,22 +183,10 @@ with col1:
             image = Image.open(
                 BytesIO(response.content)
             )
-             st.write("Genre:", genre)
-             st.write("Personality:", personality)
-             st.write("Powers:", powers)
 
-              image_prompt = urllib.parse.quote(
-                 f"{genre} character portrait, {personality}, {powers}"
-)
-
-image_url = (
-f"https://image.pollinations.ai/prompt/{image_prompt}"
-)
-
-            st.write(image_ur
             st.image(
                 image,
-                caption="🎨 AI Character Portrait",
+                caption="🎨 Character Portrait",
                 use_container_width=True
             )
 
@@ -222,10 +196,10 @@ f"https://image.pollinations.ai/prompt/{image_prompt}"
                 "Portrait generation unavailable"
             )
 
-    except Exception:
+    except Exception as e:
 
         st.warning(
-            "Unable to load portrait"
+            f"Unable to load portrait: {e}"
         )
 
     with st.expander("Debug Image URL"):
@@ -236,8 +210,6 @@ with col2:
     st.markdown(
         st.session_state.character
     )
-
-if st.session_state.character:
 
 st.download_button(
     label="📥 Download Character",
@@ -253,6 +225,7 @@ st.subheader("💬 Chat With Character")
 for role, message in st.session_state.chat_history:
 
     with st.chat_message(role):
+
         st.markdown(message)
 
 user_input = st.chat_input(
@@ -276,8 +249,8 @@ if user_input:
 
     st.rerun()
 
-
 else:
-    st.info(
-        "Create a character from the sidebar to begin."
-    )
+
+st.info(
+    "Create a character from the sidebar to begin."
+)
