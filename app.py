@@ -103,14 +103,37 @@ def generate_image(prompt):
         + urllib.parse.quote_plus(prompt)
     )
 
+    st.write("Image URL:", url)
+
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(
+            url,
+            timeout=30
+        )
 
-        if response.status_code == 200:
-            return Image.open(BytesIO(response.content))
+        st.write("Status Code:", response.status_code)
+        st.write(
+            "Content-Type:",
+            response.headers.get("content-type")
+        )
 
-    except Exception:
-        return None
+        if (
+            response.status_code == 200
+            and response.headers.get(
+                "content-type",
+                ""
+            ).startswith("image/")
+        ):
+            return Image.open(
+                BytesIO(response.content)
+            )
+
+        st.warning(
+            "Pollinations returned a non-image response."
+        )
+
+    except Exception as e:
+        st.error(f"Image Error: {e}")
 
     return None
 
