@@ -1,7 +1,10 @@
 import os
 import urllib.parse
+import requests
+from io import BytesIO
 
 import streamlit as st
+from PIL import Image
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -29,8 +32,8 @@ if "character" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if "image_url" not in st.session_state:
-    st.session_state.image_url = None
+if "image" not in st.session_state:
+    st.session_state.image = None
 
 
 # ------------------------
@@ -90,24 +93,26 @@ User: {user_message}
 
 
 # ------------------------
-# POLLINATIONS IMAGE (STABLE)
+# IMAGE GENERATION (FIXED — NO BROWSER DEPENDENCY)
 # ------------------------
 
-def generate_character_image_url(genre, personality, powers):
+def generate_image(prompt):
 
-    prompt = (
-        f"{genre} dark fantasy character portrait, "
-        f"{personality}, "
-        f"{powers}, "
-        f"cinematic lighting, ultra detailed face, digital painting"
-    )
-
-    encoded = urllib.parse.quote_plus(prompt)
-
-    return (
+    url = (
         "https://image.pollinations.ai/prompt/"
-        f"{encoded}?model=flux&width=512&height=512&nologo=true"
+        + urllib.parse.quote_plus(prompt)
     )
+
+    try:
+        response = requests.get(url, timeout=30)
+
+        if response.status_code == 200:
+            return Image.open(BytesIO(response.content))
+
+    except Exception:
+        return None
+
+    return None
 
 
 # ------------------------
@@ -136,11 +141,13 @@ with st.sidebar:
                 powers
             )
 
-            st.session_state.image_url = generate_character_image_url(
-                genre,
-                personality,
-                powers
+            image_prompt = (
+                f"{genre} dark fantasy character portrait, "
+                f"{personality}, "
+                f"{powers}, cinematic lighting, ultra detailed"
             )
+
+            st.session_state.image = generate_image(image_prompt)
 
             st.session_state.chat_history = []
 
@@ -150,7 +157,7 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Pollinations AI (Fully Stable Rendering Mode)")
+st.caption("Groq + Pollinations Stable Image Mode (FIXED)")
 
 
 # ------------------------
@@ -165,30 +172,14 @@ if st.session_state.character:
 
     with col1:
 
-        fallback = (
-            "https://api.dicebear.com/9.x/adventurer/png"
-            f"?seed={urllib.parse.quote(st.session_state.character[:60])}"
-        )
-
-        img_url = st.session_state.image_url or fallback
-
-        st.markdown(
-            f"""
-            <div style="display:flex; justify-content:center;">
-                <img
-                    src="{img_url}"
-                    style="
-                        width:100%;
-                        max-width:420px;
-                        border-radius:16px;
-                        box-shadow:0px 10px 30px rgba(0,0,0,0.3);
-                    "
-                    onerror="this.onerror=null;this.src='{fallback}';"
-                />
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        if st.session_state.image:
+            st.image(
+                st.session_state.image,
+                caption="🎨 AI Character Portrait",
+                use_container_width=True
+            )
+        else:
+            st.warning("Image failed to generate (Pollinations may be blocked or slow)")
 
     with col2:
         st.markdown(st.session_state.character)
@@ -202,7 +193,7 @@ if st.session_state.character:
     st.divider()
 
     # ------------------------
-    # CHAT SECTION
+    # CHAT
     # ------------------------
 
     st.subheader("💬 Chat With Character")
@@ -229,4 +220,3 @@ if st.session_state.character:
 else:
 
     st.info("Create a character from the sidebar to begin.")
-        
