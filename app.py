@@ -199,39 +199,36 @@ st.caption(
     "Generate, visualize, and chat with AI-powered characters."
 )
 
+```python
 # ------------------------
 # CHARACTER PROFILE
 # ------------------------
 
 if st.session_state.character:
 
-    st.subheader(
-        "📜 Character Profile"
-    )
+    st.subheader("📜 Character Profile")
 
-    col1, col2 = st.columns(
-        [1, 2]
-    )
+    col1, col2 = st.columns([1, 2])
 
-with col1:
+    with col1:
 
-    try:
+        try:
 
-        st.image(
-            str(st.session_state.image_url),
-            caption="🎨 AI Generated Character",
-            use_container_width=True
-        )
+            st.image(
+                st.session_state.image_url,
+                caption="🎨 AI Generated Character",
+                use_container_width=True
+            )
 
-    except Exception:
+        except Exception:
 
-        st.warning(
-            "Image generation unavailable"
-        )
+            st.warning(
+                "Image generation unavailable"
+            )
 
-        st.code(
-            st.session_state.image_url
-        )
+            st.code(
+                st.session_state.image_url
+            )
 
     with col2:
 
@@ -257,9 +254,7 @@ with col1:
         "💬 Chat With Character"
     )
 
-    for role, message in (
-        st.session_state.chat_history
-    ):
+    for role, message in st.session_state.chat_history:
 
         with st.chat_message(role):
 
@@ -272,28 +267,20 @@ with col1:
     if user_input:
 
         st.session_state.chat_history.append(
-            (
-                "user",
-                user_input
-            )
+            ("user", user_input)
         )
 
         with st.spinner(
             "Character is thinking..."
         ):
 
-            response = (
-                chat_with_character(
-                    st.session_state.character,
-                    user_input
-                )
+            response = chat_with_character(
+                st.session_state.character,
+                user_input
             )
 
         st.session_state.chat_history.append(
-            (
-                "assistant",
-                response
-            )
+            ("assistant", response)
         )
 
         st.rerun()
@@ -303,4 +290,5 @@ else:
     st.info(
         "Create a character from the sidebar to begin."
     )
+```
 
