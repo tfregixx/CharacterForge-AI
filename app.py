@@ -215,7 +215,7 @@ if st.session_state.character:
 
     with col1:
         
-try:
+ try:
         st.image(
         str(st.session_state.image_url),
         caption="🎨 AI Generated Character",
