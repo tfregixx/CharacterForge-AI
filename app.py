@@ -1,3 +1,4 @@
+```python
 import os
 import urllib.parse
 
@@ -75,6 +76,9 @@ Format using markdown.
     )
 
     content = response.choices[0].message.content
+
+    st.write("DEBUG RESPONSE:")
+    st.write(content)
 
     return str(content)
 
@@ -174,15 +178,18 @@ with st.sidebar:
             "Generating Character..."
         ):
 
-            result = generate_character(
+            character = generate_character(
                 genre,
                 personality,
                 powers
             )
 
-            st.write(result)  # DEBUG
+            st.write("GENERATED:")
+            st.write(character)
 
-            st.session_state.character = result
+            st.session_state.character = str(
+                character
+            )
 
             st.session_state.image_url = (
                 generate_character_image_url(
@@ -242,22 +249,30 @@ if st.session_state.character:
     with col2:
 
         st.write(
-            type(
-                st.session_state.character
+            str(
+                type(
+                    st.session_state.character
+                )
             )
         )
 
         st.write(
-            st.session_state.character
+            str(
+                st.session_state.character
+            )
         )
 
         st.markdown(
-            st.session_state.character
+            str(
+                st.session_state.character
+            )
         )
 
     st.download_button(
         label="📥 Download Character",
-        data=st.session_state.character,
+        data=str(
+            st.session_state.character
+        ),
         file_name="character.txt",
         mime="text/plain",
         use_container_width=True
@@ -319,4 +334,4 @@ else:
     st.info(
         "Create a character from the sidebar to begin."
     )
-
+```
