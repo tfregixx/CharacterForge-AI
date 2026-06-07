@@ -1,10 +1,8 @@
 import os
-import time
+import urllib.parse
 import requests
-from io import BytesIO
 
 import streamlit as st
-from PIL import Image
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -20,16 +18,7 @@ st.set_page_config(
     layout="wide"
 )
 
-HF_TOKEN = os.getenv("HF_TOKEN")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-client = Groq(api_key=GROQ_API_KEY)
-
-HF_API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
-
-headers = {
-    "Authorization": f"Bearer {HF_TOKEN}"
-}
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ------------------------
 # SESSION STATE
@@ -41,12 +30,12 @@ if "character" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if "image" not in st.session_state:
-    st.session_state.image = None
+if "image_url" not in st.session_state:
+    st.session_state.image_url = None
 
 
 # ------------------------
-# CHARACTER GENERATION
+# CHARACTER GENERATION (GROQ)
 # ------------------------
 
 def generate_character(genre, personality, powers):
@@ -59,7 +48,14 @@ Personality: {personality}
 Powers: {powers}
 
 Include:
-Name, Age, Appearance, Backstory, Strengths, Weaknesses, Abilities, Catchphrase
+Name
+Age
+Appearance
+Backstory
+Strengths
+Weaknesses
+Abilities
+Catchphrase
 """
 
     response = client.chat.completions.create(
@@ -71,7 +67,7 @@ Name, Age, Appearance, Backstory, Strengths, Weaknesses, Abilities, Catchphrase
 
 
 # ------------------------
-# CHAT
+# CHAT FUNCTION
 # ------------------------
 
 def chat_with_character(character, user_message):
@@ -95,72 +91,21 @@ User: {user_message}
 
 
 # ------------------------
-# IMAGE GENERATION (SAFE + DEBUG)
+# POLLINATIONS IMAGE (FIXED + SAFE)
 # ------------------------
 
-def generate_image(prompt_text):
+def generate_character_image_url(genre, personality, powers):
 
-    payload = {"inputs": prompt_text}
+    prompt = (
+        f"{genre} fantasy character portrait, "
+        f"{personality}, "
+        f"{powers}, "
+        f"cinematic lighting, ultra detailed face, digital art"
+    )
 
-    st.write("HF API:", HF_API_URL)
-    st.write("HF Token Loaded:", bool(HF_TOKEN))
+    encoded = urllib.parse.quote(prompt)
 
-    for attempt in range(3):
-
-        try:
-            response = requests.post(
-                HF_API_URL,
-                headers=headers,
-                json=payload,
-                timeout=90
-            )
-
-        except requests.exceptions.ConnectionError:
-            st.error("❌ ConnectionError: Hugging Face unreachable")
-            return None
-
-        except Exception as e:
-            st.error(f"❌ Unexpected error: {e}")
-            return None
-
-        # ------------------------
-        # DEBUG OUTPUT
-        # ------------------------
-        st.write("STATUS CODE:", response.status_code)
-
-        try:
-            st.write("RESPONSE TEXT (preview):", str(response.text)[:200])
-        except:
-            st.write("RESPONSE TEXT: binary data")
-
-        # ------------------------
-        # SUCCESS
-        # ------------------------
-        if response.status_code == 200:
-            try:
-                return Image.open(BytesIO(response.content))
-            except:
-                st.error("Failed to decode image")
-                return None
-
-        # ------------------------
-        # MODEL LOADING
-        # ------------------------
-        if response.status_code == 503:
-            st.warning("Model loading... retrying")
-            time.sleep(5)
-            continue
-
-        # ------------------------
-        # AUTH ERROR
-        # ------------------------
-        if response.status_code == 401:
-            st.error("Invalid HF token")
-            return None
-
-        return None
-
-    return None
+    return f"https://image.pollinations.ai/prompt/{encoded}?model=flux"
 
 
 # ------------------------
@@ -184,16 +129,16 @@ with st.sidebar:
         with st.spinner("Generating character..."):
 
             st.session_state.character = generate_character(
-                genre, personality, powers
+                genre,
+                personality,
+                powers
             )
 
-            image_prompt = (
-                f"{genre} fantasy warrior, "
-                f"{personality}, "
-                f"{powers}, cinematic lighting, ultra detailed"
+            st.session_state.image_url = generate_character_image_url(
+                genre,
+                personality,
+                powers
             )
-
-            st.session_state.image = generate_image(image_prompt)
 
             st.session_state.chat_history = []
 
@@ -203,11 +148,11 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Hugging Face Debug Mode Enabled")
+st.caption("Groq + Pollinations AI (Zero Error Image Mode)")
 
 
 # ------------------------
-# DISPLAY
+# DISPLAY CHARACTER
 # ------------------------
 
 if st.session_state.character:
@@ -218,14 +163,21 @@ if st.session_state.character:
 
     with col1:
 
-        if st.session_state.image:
-            st.image(
-                st.session_state.image,
-                caption="🎨 AI Character Portrait",
-                use_container_width=True
-            )
+        # 🔥 SAFE IMAGE RENDER (NO CRASH EVER)
+        if st.session_state.image_url:
+
+            try:
+                st.image(
+                    st.session_state.image_url,
+                    caption="🎨 AI Character Portrait",
+                    use_container_width=True
+                )
+            except Exception:
+                st.warning("Image failed to load, but app continues safely")
+                st.code(st.session_state.image_url)
+
         else:
-            st.warning("Image failed (check HF logs above)")
+            st.warning("No image generated")
 
     with col2:
         st.markdown(st.session_state.character)
@@ -237,6 +189,10 @@ if st.session_state.character:
     )
 
     st.divider()
+
+    # ------------------------
+    # CHAT
+    # ------------------------
 
     st.subheader("💬 Chat With Character")
 
