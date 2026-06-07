@@ -1,4 +1,3 @@
-
 import os
 import urllib.parse
 
@@ -18,9 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ------------------------
 # SESSION STATE
@@ -35,8 +32,9 @@ if "chat_history" not in st.session_state:
 if "image_url" not in st.session_state:
     st.session_state.image_url = None
 
+
 # ------------------------
-# CHARACTER GENERATION
+# CHARACTER GENERATION (GROQ)
 # ------------------------
 
 def generate_character(genre, personality, powers):
@@ -68,7 +66,7 @@ Catchphrase
 
 
 # ------------------------
-# CHAT
+# CHAT (GROQ)
 # ------------------------
 
 def chat_with_character(character, user_message):
@@ -97,19 +95,16 @@ User: {user_message}
 
 def generate_character_image_url(genre, personality, powers):
 
-    prompt = (
-        f"{genre} cinematic character portrait, "
+    prompt = urllib.parse.quote(
+        f"{genre} character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"ultra detailed, fantasy art, dramatic lighting, high quality"
+        f"cinematic lighting, ultra detailed face, fantasy concept art, high quality"
     )
 
-    encoded = urllib.parse.quote(prompt)
-
     return (
-        "https://image.pollinations.ai/prompt/"
-        f"{encoded}"
-        "?model=flux&width=1024&height=1024&nologo=true"
+        f"https://image.pollinations.ai/prompt/{prompt}"
+        "?model=flux&width=1024&height=1024&enhance=true&nologo=true"
     )
 
 
@@ -155,6 +150,7 @@ with st.sidebar:
 st.title("🎭 CharacterForge AI")
 st.caption("Groq + Pollinations AI Character Generator")
 
+
 # ------------------------
 # CHARACTER VIEW
 # ------------------------
@@ -169,12 +165,11 @@ if st.session_state.character:
 
         fallback_avatar = (
             "https://api.dicebear.com/9.x/adventurer/png"
-            f"?seed={urllib.parse.quote(str(personality + powers))}"
+            f"?seed={urllib.parse.quote(personality + powers)}"
         )
 
         if st.session_state.image_url:
 
-            # SAFE STREAMLIT IMAGE (MOST RELIABLE)
             st.image(
                 st.session_state.image_url,
                 caption="🎨 AI Character Portrait",
@@ -229,4 +224,4 @@ if st.session_state.character:
 else:
 
     st.info("Create a character from the sidebar to begin.")
-
+    
