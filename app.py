@@ -114,27 +114,21 @@ def generate_character_image_url(
 ):
     prompt = urllib.parse.quote(
         f"""
-        {genre} fantasy character,
+        {genre} character portrait,
         {personality},
-        powers: {powers},
-        character portrait,
-        highly detailed,
+        {powers},
         fantasy concept art,
+        highly detailed,
         cinematic lighting,
-        masterpiece,
-        ultra detailed,
-        sharp focus,
         digital painting,
-        artstation quality
+        masterpiece,
+        ultra realistic,
+        character sheet
         """
     )
 
     return (
         f"https://image.pollinations.ai/prompt/{prompt}"
-        "?width=1024"
-        "&height=1024"
-        "&seed=42"
-        "&nologo=true"
     )
 
 # ------------------------
@@ -221,11 +215,23 @@ if st.session_state.character:
 
     with col1:
 
-        st.image(
-            st.session_state.image_url,
-            caption="🎨 AI Generated Character",
-            use_container_width=True
-        )
+        try:
+
+    st.image(
+        str(st.session_state.image_url),
+        caption="🎨 AI Generated Character",
+        use_container_width=True
+    )
+
+except Exception:
+
+    st.warning(
+        "Image generation unavailable"
+    )
+
+    st.code(
+        st.session_state.image_url
+    )
 
     with col2:
 
