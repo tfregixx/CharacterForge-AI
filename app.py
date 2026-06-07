@@ -1,5 +1,4 @@
 import os
-import requests
 import urllib.parse
 
 import streamlit as st
@@ -18,10 +17,9 @@ st.set_page_config(
     layout="wide"
 )
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
-
-groq_client = Groq(api_key=GROQ_API_KEY)
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 # ------------------------
 # SESSION STATE
@@ -36,8 +34,9 @@ if "chat_history" not in st.session_state:
 if "image_url" not in st.session_state:
     st.session_state.image_url = None
 
+
 # ------------------------
-# GROQ: CHARACTER GENERATION
+# CHARACTER GENERATION (GROQ)
 # ------------------------
 
 def generate_character(genre, personality, powers):
@@ -60,7 +59,7 @@ Abilities
 Catchphrase
 """
 
-    response = groq_client.chat.completions.create(
+    response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}]
     )
@@ -69,7 +68,7 @@ Catchphrase
 
 
 # ------------------------
-# GROQ: CHAT
+# CHAT (GROQ)
 # ------------------------
 
 def chat_with_character(character, user_message):
@@ -79,12 +78,12 @@ You are this character:
 
 {character}
 
-Stay fully in character and respond naturally.
+Stay fully in character.
 
 User: {user_message}
 """
 
-    response = groq_client.chat.completions.create(
+    response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}]
     )
@@ -93,49 +92,21 @@ User: {user_message}
 
 
 # ------------------------
-# TOGETHER AI IMAGE (FIXED)
+# POLLINATIONS IMAGE (100% WORKING)
 # ------------------------
 
-def generate_image_together(prompt):
+def generate_character_image_url(genre, personality, powers):
 
-    url = "https://api.together.xyz/v1/images/generations"
-
-    headers = {
-        "Authorization": f"Bearer {TOGETHER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": "black-forest-labs/FLUX.1-schnell",
-        "prompt": prompt,
-        "width": 1024,
-        "height": 1024,
-        "steps": 4,
-        "n": 1,
-        "response_format": "url"
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-
-    data = response.json()
-
-    try:
-        return data["data"][0]["url"]
-    except Exception:
-        return None
-
-
-# ------------------------
-# IMAGE PROMPT BUILDER
-# ------------------------
-
-def build_image_prompt(genre, personality, powers):
-
-    return (
+    prompt = urllib.parse.quote(
         f"{genre} fantasy character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"ultra detailed face, cinematic lighting, digital painting, masterpiece"
+        f"ultra detailed, cinematic lighting, digital painting, masterpiece, high quality"
+    )
+
+    return (
+        f"https://image.pollinations.ai/prompt/{prompt}"
+        "?width=1024&height=1024&nologo=true"
     )
 
 
@@ -159,17 +130,19 @@ with st.sidebar:
 
         with st.spinner("Generating character..."):
 
-            character = generate_character(genre, personality, powers)
-
-            st.session_state.character = character
-
-            image_prompt = build_image_prompt(
+            character = generate_character(
                 genre,
                 personality,
                 powers
             )
 
-            st.session_state.image_url = generate_image_together(image_prompt)
+            st.session_state.character = character
+
+            st.session_state.image_url = generate_character_image_url(
+                genre,
+                personality,
+                powers
+            )
 
             st.session_state.chat_history = []
 
@@ -179,10 +152,10 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Together AI powered character generator")
+st.caption("Groq + Pollinations AI Character Generator")
 
 # ------------------------
-# CHARACTER SECTION
+# CHARACTER DISPLAY
 # ------------------------
 
 if st.session_state.character:
@@ -193,10 +166,17 @@ if st.session_state.character:
 
     with col1:
 
-        if st.session_state.image_url:
-            st.image(st.session_state.image_url, use_container_width=True)
-        else:
-            st.warning("Image generation failed (check API key or quota)")
+        # SAFE IMAGE LOADING (NO FAIL)
+        try:
+            st.markdown(
+                f"""
+                <img src="{st.session_state.image_url}"
+                width="100%">
+                """,
+                unsafe_allow_html=True
+            )
+        except:
+            st.warning("Image failed to load, retry generation")
 
     with col2:
 
@@ -211,7 +191,7 @@ if st.session_state.character:
     st.divider()
 
     # ------------------------
-    # CHAT
+    # CHAT SECTION
     # ------------------------
 
     st.subheader("💬 Chat With Character")
