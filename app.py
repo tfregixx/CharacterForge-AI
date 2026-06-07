@@ -20,7 +20,15 @@ st.set_page_config(
     layout="wide"
 )
 
+HF_TOKEN = os.getenv("HF_TOKEN")
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# Hugging Face SDXL endpoint
+HF_API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+
+headers = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
 
 # ------------------------
 # SESSION STATE
@@ -32,8 +40,8 @@ if "character" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if "image_url" not in st.session_state:
-    st.session_state.image_url = None
+if "image" not in st.session_state:
+    st.session_state.image = None
 
 
 # ------------------------
@@ -93,41 +101,24 @@ User: {user_message}
 
 
 # ------------------------
-# POLLINATIONS IMAGE (FIXED PROPERLY)
+# IMAGE GENERATION (HUGGINGFACE SDXL)
 # ------------------------
 
-def generate_character_image_url(genre, personality, powers):
-
-    prompt = (
-        f"{genre} fantasy character portrait, "
-        f"{personality}, "
-        f"{powers}, "
-        f"cinematic lighting, ultra detailed face, digital painting, high quality"
-    )
-
-    encoded = urllib.parse.quote(prompt)
-
-    return (
-        "https://image.pollinations.ai/prompt/"
-        f"{encoded}"
-        "?model=flux&width=1024&height=1024&enhance=true&nologo=true"
-    )
-
-
-# ------------------------
-# SAFE IMAGE LOADER (IMPORTANT)
-# ------------------------
-
-def load_image(url):
+def generate_image(prompt_text):
 
     try:
-        r = requests.get(url, timeout=15)
+        response = requests.post(
+            HF_API_URL,
+            headers=headers,
+            json={"inputs": prompt_text},
+            timeout=60
+        )
 
-        if r.status_code == 200 and "image" in r.headers.get("Content-Type", ""):
-            return Image.open(BytesIO(r.content))
+        if response.status_code == 200:
+            return Image.open(BytesIO(response.content))
 
     except Exception:
-        pass
+        return None
 
     return None
 
@@ -150,19 +141,20 @@ with st.sidebar:
 
     if st.button("Generate Character", use_container_width=True):
 
-        with st.spinner("Generating character..."):
+        with st.spinner("Creating character..."):
 
-            st.session_state.character = generate_character(
-                genre,
-                personality,
-                powers
+            character = generate_character(genre, personality, powers)
+
+            st.session_state.character = character
+
+            image_prompt = (
+                f"{genre} character portrait, "
+                f"{personality}, "
+                f"{powers}, "
+                f"cinematic lighting, ultra detailed face, fantasy digital art"
             )
 
-            st.session_state.image_url = generate_character_image_url(
-                genre,
-                personality,
-                powers
-            )
+            st.session_state.image = generate_image(image_prompt)
 
             st.session_state.chat_history = []
 
@@ -172,11 +164,11 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Pollinations AI Character Generator")
+st.caption("Groq + Hugging Face SDXL Character Generator")
 
 
 # ------------------------
-# CHARACTER DISPLAY
+# DISPLAY
 # ------------------------
 
 if st.session_state.character:
@@ -187,13 +179,14 @@ if st.session_state.character:
 
     with col1:
 
-        img = load_image(st.session_state.image_url)
-
-        if img:
-            st.image(img, caption="🎨 AI Character Portrait", use_container_width=True)
+        if st.session_state.image:
+            st.image(
+                st.session_state.image,
+                caption="🎨 AI Character Portrait",
+                use_container_width=True
+            )
         else:
-            st.warning("Image generation failed (Pollinations API issue)")
-            st.code(st.session_state.image_url)
+            st.warning("Image generation failed (HF API issue)")
 
     with col2:
 
@@ -235,3 +228,4 @@ if st.session_state.character:
 else:
 
     st.info("Create a character from the sidebar to begin.")
+    
