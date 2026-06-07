@@ -34,7 +34,6 @@ if "chat_history" not in st.session_state:
 if "image_url" not in st.session_state:
     st.session_state.image_url = None
 
-
 # ------------------------
 # CHARACTER GENERATION (GROQ)
 # ------------------------
@@ -92,16 +91,16 @@ User: {user_message}
 
 
 # ------------------------
-# POLLINATIONS IMAGE (100% WORKING)
+# POLLINATIONS IMAGE
 # ------------------------
 
 def generate_character_image_url(genre, personality, powers):
 
     prompt = urllib.parse.quote(
-        f"{genre} fantasy character portrait, "
+        f"{genre} cinematic character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"ultra detailed, cinematic lighting, digital painting, masterpiece, high quality"
+        f"ultra detailed, dramatic lighting, fantasy concept art, high quality face"
     )
 
     return (
@@ -155,7 +154,7 @@ st.title("🎭 CharacterForge AI")
 st.caption("Groq + Pollinations AI Character Generator")
 
 # ------------------------
-# CHARACTER DISPLAY
+# CHARACTER VIEW
 # ------------------------
 
 if st.session_state.character:
@@ -166,17 +165,41 @@ if st.session_state.character:
 
     with col1:
 
-        # SAFE IMAGE LOADING (NO FAIL)
-        try:
-            st.markdown(
-                f"""
-                <img src="{st.session_state.image_url}"
-                width="100%">
-                """,
-                unsafe_allow_html=True
+        # fallback avatar (always works)
+        fallback_avatar = (
+            "https://api.dicebear.com/9.x/adventurer/png"
+            f"?seed={urllib.parse.quote(powers + personality)}"
+        )
+
+        if st.session_state.image_url:
+
+            try:
+                st.image(
+                    st.session_state.image_url,
+                    caption="🎨 AI Character Portrait",
+                    use_container_width=True
+                )
+
+                with st.expander("Open Image Directly"):
+                    st.markdown(
+                        f"[🔗 Open Image]({st.session_state.image_url})"
+                    )
+
+            except Exception:
+
+                st.image(
+                    fallback_avatar,
+                    caption="🎨 Fallback Avatar",
+                    use_container_width=True
+                )
+
+        else:
+
+            st.image(
+                fallback_avatar,
+                caption="🎨 Default Avatar",
+                use_container_width=True
             )
-        except:
-            st.warning("Image failed to load, retry generation")
 
     with col2:
 
