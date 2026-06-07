@@ -214,10 +214,9 @@ if st.session_state.character:
     )
 
     with col1:
-
+        
 try:
-
-    st.image(
+        st.image(
         str(st.session_state.image_url),
         caption="🎨 AI Generated Character",
         use_container_width=True
