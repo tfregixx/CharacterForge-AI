@@ -1,8 +1,7 @@
 import os
-import urllib.parse
-import requests
 from io import BytesIO
 
+import requests
 import streamlit as st
 from PIL import Image
 from dotenv import load_dotenv
@@ -20,7 +19,23 @@ st.set_page_config(
     layout="wide"
 )
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# ------------------------
+# API KEYS
+# ------------------------
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+client = Groq(
+    api_key=GROQ_API_KEY
+)
+
+# Stable SDXL model
+HF_MODEL = "stabilityai/stable-diffusion-xl-base-1.0"
+
+HF_API_URL = (
+    f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+)
 
 # ------------------------
 # SESSION STATE
@@ -35,13 +50,15 @@ if "chat_history" not in st.session_state:
 if "image" not in st.session_state:
     st.session_state.image = None
 
-
 # ------------------------
-# CHARACTER GENERATION (GROQ)
+# CHARACTER GENERATION
 # ------------------------
 
-def generate_character(genre, personality, powers):
-
+def generate_character(
+    genre,
+    personality,
+    powers
+):
     prompt = f"""
 Create a detailed fictional character.
 
@@ -49,96 +66,131 @@ Genre: {genre}
 Personality: {personality}
 Powers: {powers}
 
-Include:
-Name
-Age
-Appearance
-Backstory
-Strengths
-Weaknesses
-Abilities
-Catchphrase
+Generate:
+
+# Name
+# Age
+# Appearance
+# Backstory
+# Strengths
+# Weaknesses
+# Abilities
+# Catchphrase
+
+Format using markdown.
 """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
     )
 
-    return str(response.choices[0].message.content)
-
+    return str(
+        response.choices[0].message.content
+    )
 
 # ------------------------
-# CHAT FUNCTION
+# CHARACTER CHAT
 # ------------------------
 
-def chat_with_character(character, user_message):
-
+def chat_with_character(
+    character_profile,
+    user_message
+):
     prompt = f"""
-You are this character:
+You are this character.
 
-{character}
+Character:
+{character_profile}
 
-Stay fully in character.
+Stay completely in character.
 
-User: {user_message}
+User:
+{user_message}
 """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
     )
 
-    return str(response.choices[0].message.content)
-
+    return str(
+        response.choices[0].message.content
+    )
 
 # ------------------------
-# IMAGE GENERATION (FIXED — NO BROWSER DEPENDENCY)
+# HUGGING FACE IMAGE
 # ------------------------
 
 def generate_image(prompt):
 
-    url = (
-        "https://image.pollinations.ai/prompt/"
-        + urllib.parse.quote(prompt, safe="")
-    )
+    if not HF_TOKEN:
+        st.error(
+            "HF_TOKEN not found in environment variables."
+        )
+        return None
 
-    st.write("Image URL:", url)
+    headers = {
+        "Authorization": f"Bearer {HF_TOKEN}"
+    }
+
+    payload = {
+        "inputs": prompt
+    }
 
     try:
-        response = requests.get(
-            url,
-            timeout=60,
-            headers={
-                "User-Agent": "Mozilla/5.0"
-            }
+
+        response = requests.post(
+            HF_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=180
         )
 
-        st.write("Status Code:", response.status_code)
-        st.write(
-            "Content-Type:",
-            response.headers.get("content-type")
-        )
+        if response.status_code == 200:
 
-        # ADD THIS
-        st.write("Response Body:")
-        st.code(response.text)
-
-        if (
-            response.status_code == 200
-            and response.headers.get(
-                "content-type",
-                ""
-            ).startswith("image/")
-        ):
-            return Image.open(
+            image = Image.open(
                 BytesIO(response.content)
             )
 
-    except Exception as e:
-        st.error(f"Image Error: {e}")
+            return image
 
-    return None
+        st.error(
+            f"Hugging Face Error {response.status_code}"
+        )
+
+        try:
+            st.json(response.json())
+        except Exception:
+            st.text(response.text)
+
+        return None
+
+    except requests.exceptions.ConnectionError:
+        st.error(
+            "ConnectionError: Could not reach Hugging Face."
+        )
+        return None
+
+    except requests.exceptions.Timeout:
+        st.error(
+            "Image generation timed out."
+        )
+        return None
+
+    except Exception as e:
+        st.error(str(e))
+        return None
 
 # ------------------------
 # SIDEBAR
@@ -150,69 +202,114 @@ with st.sidebar:
 
     genre = st.selectbox(
         "Genre",
-        ["Fantasy", "Sci-Fi", "Anime", "Cyberpunk", "Superhero", "Steampunk", "Horror"]
+        [
+            "Fantasy",
+            "Sci-Fi",
+            "Anime",
+            "Cyberpunk",
+            "Superhero",
+            "Steampunk",
+            "Horror"
+        ]
     )
 
-    personality = st.text_input("Personality", "Brave and mysterious")
-    powers = st.text_input("Powers", "Shadow Magic")
+    personality = st.text_input(
+        "Personality",
+        "Brave and mysterious"
+    )
 
-    if st.button("Generate Character", use_container_width=True):
+    powers = st.text_input(
+        "Powers",
+        "Shadow Magic"
+    )
 
-        with st.spinner("Generating character..."):
+    if st.button(
+        "Generate Character",
+        use_container_width=True
+    ):
 
-            st.session_state.character = generate_character(
+        with st.spinner(
+            "Generating character..."
+        ):
+
+            character = generate_character(
                 genre,
                 personality,
                 powers
             )
 
+            st.session_state.character = character
+
             image_prompt = (
-                f"{genre} dark fantasy character portrait, "
+                f"{genre} character portrait, "
                 f"{personality}, "
-                f"{powers}, cinematic lighting, ultra detailed"
+                f"{powers}, "
+                f"fantasy concept art, "
+                f"cinematic lighting, "
+                f"highly detailed, "
+                f"masterpiece"
             )
 
-            st.session_state.image = generate_image(image_prompt)
+            st.session_state.image = (
+                generate_image(
+                    image_prompt
+                )
+            )
 
             st.session_state.chat_history = []
 
-
 # ------------------------
-# MAIN UI
+# MAIN
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Pollinations Stable Image Mode (FIXED)")
 
+st.caption(
+    "Groq + Hugging Face SDXL Character Generator"
+)
 
 # ------------------------
-# DISPLAY CHARACTER
+# PROFILE
 # ------------------------
 
 if st.session_state.character:
 
-    st.subheader("📜 Character Profile")
+    st.subheader(
+        "📜 Character Profile"
+    )
 
-    col1, col2 = st.columns([1, 2])
+    col1, col2 = st.columns(
+        [1, 2]
+    )
 
     with col1:
 
         if st.session_state.image:
+
             st.image(
                 st.session_state.image,
                 caption="🎨 AI Character Portrait",
                 use_container_width=True
             )
+
         else:
-            st.warning("Image failed to generate (Pollinations may be blocked or slow)")
+
+            st.warning(
+                "Image generation failed."
+            )
 
     with col2:
-        st.markdown(st.session_state.character)
+
+        st.markdown(
+            st.session_state.character
+        )
 
     st.download_button(
-        "📥 Download Character",
-        st.session_state.character,
-        file_name="character.txt"
+        label="📥 Download Character",
+        data=st.session_state.character,
+        file_name="character.txt",
+        mime="text/plain",
+        use_container_width=True
     )
 
     st.divider()
@@ -221,27 +318,45 @@ if st.session_state.character:
     # CHAT
     # ------------------------
 
-    st.subheader("💬 Chat With Character")
+    st.subheader(
+        "💬 Chat With Character"
+    )
 
-    for role, msg in st.session_state.chat_history:
+    for role, message in (
+        st.session_state.chat_history
+    ):
+
         with st.chat_message(role):
-            st.markdown(msg)
 
-    user_input = st.chat_input("Talk to your character...")
+            st.markdown(message)
+
+    user_input = st.chat_input(
+        "Talk to your character..."
+    )
 
     if user_input:
 
-        st.session_state.chat_history.append(("user", user_input))
-
-        response = chat_with_character(
-            st.session_state.character,
-            user_input
+        st.session_state.chat_history.append(
+            ("user", user_input)
         )
 
-        st.session_state.chat_history.append(("assistant", response))
+        with st.spinner(
+            "Character is thinking..."
+        ):
+
+            response = chat_with_character(
+                st.session_state.character,
+                user_input
+            )
+
+        st.session_state.chat_history.append(
+            ("assistant", response)
+        )
 
         st.rerun()
 
 else:
 
-    st.info("Create a character from the sidebar to begin.")
+    st.info(
+        "Create a character from the sidebar to begin."
+    )
