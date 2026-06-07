@@ -1,6 +1,7 @@
 import os
-import base64
 import requests
+import urllib.parse
+
 import streamlit as st
 from dotenv import load_dotenv
 from groq import Groq
@@ -17,11 +18,10 @@ st.set_page_config(
     layout="wide"
 )
 
-groq_client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
-
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
+
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 # ------------------------
 # SESSION STATE
@@ -33,9 +33,8 @@ if "character" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if "image" not in st.session_state:
-    st.session_state.image = None
-
+if "image_url" not in st.session_state:
+    st.session_state.image_url = None
 
 # ------------------------
 # GROQ: CHARACTER GENERATION
@@ -80,7 +79,7 @@ You are this character:
 
 {character}
 
-Stay fully in character.
+Stay fully in character and respond naturally.
 
 User: {user_message}
 """
@@ -94,7 +93,7 @@ User: {user_message}
 
 
 # ------------------------
-# TOGETHER AI IMAGE
+# TOGETHER AI IMAGE (FIXED)
 # ------------------------
 
 def generate_image_together(prompt):
@@ -107,12 +106,13 @@ def generate_image_together(prompt):
     }
 
     payload = {
-        "model": "stabilityai/stable-diffusion-xl-base-1.0",
+        "model": "black-forest-labs/FLUX.1-schnell",
         "prompt": prompt,
         "width": 1024,
         "height": 1024,
-        "steps": 30,
-        "n": 1
+        "steps": 4,
+        "n": 1,
+        "response_format": "url"
     }
 
     response = requests.post(url, headers=headers, json=payload)
@@ -121,9 +121,13 @@ def generate_image_together(prompt):
 
     try:
         return data["data"][0]["url"]
-    except:
+    except Exception:
         return None
 
+
+# ------------------------
+# IMAGE PROMPT BUILDER
+# ------------------------
 
 def build_image_prompt(genre, personality, powers):
 
@@ -131,7 +135,7 @@ def build_image_prompt(genre, personality, powers):
         f"{genre} fantasy character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"ultra detailed, cinematic lighting, digital painting, masterpiece"
+        f"ultra detailed face, cinematic lighting, digital painting, masterpiece"
     )
 
 
@@ -155,11 +159,7 @@ with st.sidebar:
 
         with st.spinner("Generating character..."):
 
-            character = generate_character(
-                genre,
-                personality,
-                powers
-            )
+            character = generate_character(genre, personality, powers)
 
             st.session_state.character = character
 
@@ -169,9 +169,7 @@ with st.sidebar:
                 powers
             )
 
-            image_url = generate_image_together(image_prompt)
-
-            st.session_state.image = image_url
+            st.session_state.image_url = generate_image_together(image_prompt)
 
             st.session_state.chat_history = []
 
@@ -184,7 +182,7 @@ st.title("🎭 CharacterForge AI")
 st.caption("Groq + Together AI powered character generator")
 
 # ------------------------
-# CHARACTER DISPLAY
+# CHARACTER SECTION
 # ------------------------
 
 if st.session_state.character:
@@ -195,10 +193,10 @@ if st.session_state.character:
 
     with col1:
 
-        if st.session_state.image:
-            st.image(st.session_state.image, use_container_width=True)
+        if st.session_state.image_url:
+            st.image(st.session_state.image_url, use_container_width=True)
         else:
-            st.warning("Image generation failed")
+            st.warning("Image generation failed (check API key or quota)")
 
     with col2:
 
