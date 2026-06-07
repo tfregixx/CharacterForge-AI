@@ -26,8 +26,8 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 client = Groq(api_key=GROQ_API_KEY)
 
-# Hugging Face SDXL endpoint
-HF_API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+# ⚠️ Using more stable HF model
+HF_API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
 
 headers = {
     "Authorization": f"Bearer {HF_TOKEN}"
@@ -80,7 +80,7 @@ Catchphrase
 
 
 # ------------------------
-# CHAT
+# CHAT FUNCTION
 # ------------------------
 
 def chat_with_character(character, user_message):
@@ -104,7 +104,7 @@ User: {user_message}
 
 
 # ------------------------
-# IMAGE GENERATION (HUGGING FACE FIXED)
+# 🔥 FIXED IMAGE FUNCTION (FULL CONNECTION SAFETY)
 # ------------------------
 
 def generate_image(prompt_text):
@@ -113,33 +113,47 @@ def generate_image(prompt_text):
 
     for attempt in range(3):  # retry system
 
-        response = requests.post(
-            HF_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=90
-        )
+        try:
+            response = requests.post(
+                HF_API_URL,
+                headers=headers,
+                json=payload,
+                timeout=120  # important fix
+            )
 
-        # ✅ success
-        if response.status_code == 200:
-            try:
-                return Image.open(BytesIO(response.content))
-            except:
+            # SUCCESS
+            if response.status_code == 200:
+                try:
+                    return Image.open(BytesIO(response.content))
+                except:
+                    return None
+
+            # MODEL LOADING
+            if response.status_code == 503:
+                time.sleep(5)
+                continue
+
+            # AUTH ERROR
+            if response.status_code == 401:
+                st.error("❌ HF Token missing or invalid")
                 return None
 
-        # ⏳ model loading
-        if response.status_code == 503:
-            time.sleep(5)
-            continue
-
-        # ❌ invalid token
-        if response.status_code == 401:
-            st.error("HF Token invalid or missing")
+            st.warning(f"HF Error: {response.status_code}")
             return None
 
-        # ❌ other errors
-        st.warning(f"HF error: {response.status_code}")
-        return None
+        # 🔥 CONNECTION FIX (MAIN BUG YOU HAD)
+        except requests.exceptions.ConnectionError:
+            st.warning("⚠️ Connection failed to Hugging Face, retrying...")
+            time.sleep(3)
+            continue
+
+        except requests.exceptions.Timeout:
+            st.warning("⏱ Request timed out, retrying...")
+            continue
+
+        except Exception as e:
+            st.error(f"Unexpected error: {e}")
+            return None
 
     return None
 
@@ -167,7 +181,6 @@ with st.sidebar:
             character = generate_character(genre, personality, powers)
             st.session_state.character = character
 
-            # 🔥 SIMPLE SAFE IMAGE PROMPT (IMPORTANT)
             image_prompt = (
                 f"{genre} fantasy warrior, "
                 f"{personality}, "
@@ -185,11 +198,11 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Hugging Face SDXL Character Generator")
+st.caption("Groq + Hugging Face Stable Image Generator")
 
 
 # ------------------------
-# DISPLAY
+# DISPLAY CHARACTER
 # ------------------------
 
 if st.session_state.character:
@@ -207,10 +220,18 @@ if st.session_state.character:
                 use_container_width=True
             )
         else:
-            st.warning("Image generation failed (HF is loading or rate limited)")
+            st.warning("⚠️ Image failed (HF connection issue or rate limit)")
+
+            if st.button("🔄 Retry Image"):
+                image_prompt = (
+                    f"{genre} fantasy warrior, "
+                    f"{personality}, "
+                    f"{powers}, cinematic lighting"
+                )
+                st.session_state.image = generate_image(image_prompt)
+                st.rerun()
 
     with col2:
-
         st.markdown(st.session_state.character)
 
     st.download_button(
