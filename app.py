@@ -100,7 +100,7 @@ def generate_image(prompt):
 
     url = (
         "https://image.pollinations.ai/prompt/"
-        + urllib.parse.quote_plus(prompt)
+        + urllib.parse.quote(prompt, safe="")
     )
 
     st.write("Image URL:", url)
@@ -108,7 +108,10 @@ def generate_image(prompt):
     try:
         response = requests.get(
             url,
-            timeout=30
+            timeout=60,
+            headers={
+                "User-Agent": "Mozilla/5.0"
+            }
         )
 
         st.write("Status Code:", response.status_code)
@@ -116,6 +119,10 @@ def generate_image(prompt):
             "Content-Type:",
             response.headers.get("content-type")
         )
+
+        # ADD THIS
+        st.write("Response Body:")
+        st.code(response.text)
 
         if (
             response.status_code == 200
@@ -128,15 +135,10 @@ def generate_image(prompt):
                 BytesIO(response.content)
             )
 
-        st.warning(
-            "Pollinations returned a non-image response."
-        )
-
     except Exception as e:
         st.error(f"Image Error: {e}")
 
     return None
-
 
 # ------------------------
 # SIDEBAR
