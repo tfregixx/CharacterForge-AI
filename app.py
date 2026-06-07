@@ -231,7 +231,7 @@ except Exception:
 
     st.code(
         st.session_state.image_url
-    ))
+    )
 
     with col2:
 
