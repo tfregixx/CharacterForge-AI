@@ -161,7 +161,6 @@ GROQ_API_KEY=your_groq_api_key_here
  <img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?style=for-the-badge"/> 
  <img src="https://img.shields.io/badge/Python-Code-3776AB?style=for-the-badge"/> 
 </p>
-
 characterforge-ai/
 │── app.py
 │── requirements.txt
@@ -218,9 +217,9 @@ Kaelin Darkshadow, a shadow mage born in eternal twilight, master of illusions a
  <img src="https://img.shields.io/badge/Chat-Real%20Time-green?style=for-the-badge"/> 
  <img src="https://img.shields.io/badge/Context-Aware-blue?style=for-the-badge"/>
 </p>
-Real-time conversation
-Session-based memory
-Character consistency
+- Real-time conversation
+- Session-based memory
+- Character consistency
 
 ---
 
@@ -229,9 +228,9 @@ Character consistency
  <img src="https://img.shields.io/badge/Pollinations-AI-blue?style=for-the-badge"/> 
  <img src="https://img.shields.io/badge/Fallback-DiceBear-lightgrey?style=for-the-badge"/> 
 </p>
-Pollinations AI (free image generation)
-Stable fallback avatar system
-Always renders an image
+- Pollinations AI (free image generation)
+- Stable fallback avatar system
+- Always renders an image
 
 ---
 
