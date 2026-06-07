@@ -1,8 +1,5 @@
 import os
 import urllib.parse
-import requests
-from PIL import Image
-from io import BytesIO
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -104,51 +101,7 @@ User:
     )
 
     return response.choices[0].message.content
-def generate_character_image(
-genre,
-personality,
-powers
-):
-api_url = (
-"https://api-inference.huggingface.co/models/"
-"stabilityai/stable-diffusion-xl-base-1.0"
-)
 
-headers = {
-    "Authorization": f"Bearer {os.getenv('HF_TOKEN')}"
-}
-
-prompt = (
-    f"{genre} character, "
-    f"{personality}, "
-    f"{powers}, "
-    f"fantasy concept art, "
-    f"highly detailed, "
-    f"cinematic lighting"
-)
-
-try:
-
-    response = requests.post(
-        api_url,
-        headers=headers,
-        json={
-            "inputs": prompt
-        },
-        timeout=180
-    )
-
-    if response.status_code == 200:
-
-        return Image.open(
-            BytesIO(response.content)
-        )
-
-    return None
-
-except Exception:
-
-    return None
 
 # ------------------------
 # SIDEBAR
@@ -178,131 +131,100 @@ with st.sidebar:
         "Shadow Magic"
     )
 
-  if st.button("Generate Character"):
+    if st.button("Generate Character"):
 
-  with st.spinner("Generating Character..."):
+        with st.spinner("Generating Character..."):
 
-    st.session_state.character = generate_character(
-        genre,
-        personality,
-        powers
-    )
+            st.session_state.character = generate_character(
+                genre,
+                personality,
+                powers
+            )
 
-    st.session_state.character_image = (
-        generate_character_image(
-            genre,
-            personality,
-            powers
-        )
-    )
-
-    st.session_state.chat_history = []
+            st.session_state.chat_history = []
 
 # ------------------------
 # MAIN
 # ------------------------
+
 st.title("🎭 CharacterForge AI")
+
 st.caption(
-"Generate, chat, and manage AI characters"
+    "Generate, chat, and manage AI characters"
 )
+
+# ------------------------
+# CHARACTER PROFILE
+# ------------------------
 
 if st.session_state.character:
 
-  st.subheader("Character Profile")
+    st.subheader("Character Profile")
 
-image_prompt = urllib.parse.quote(
-    f"{genre} character portrait, {personality}, {powers}, fantasy art, detailed face, cinematic lighting"
-)
+    avatar_seed = urllib.parse.quote(
+        f"{genre}-{personality}-{powers}"
+    )
 
-image_url = (
-    f"https://image.pollinations.ai/prompt/{image_prompt}"
-    f"?width=512&height=512"
-)
+    avatar_url = (
+        f"https://api.dicebear.com/9.x/adventurer/png"
+        f"?seed={avatar_seed}"
+    )
 
-col1, col2 = st.columns([1, 2])
+    col1, col2 = st.columns([1, 2])
 
-with col1:
+    with col1:
 
-    try:
-
-        response = requests.get(
-            image_url,
-            timeout=30
+        st.image(
+            avatar_url,
+            caption="🎨 Character Avatar",
+            use_container_width=True
         )
 
-        if response.status_code == 200:
+    with col2:
 
-            image = Image.open(
-                BytesIO(response.content)
-            )
-
-            st.image(
-                image,
-                caption="🎨 Character Portrait",
-                use_container_width=True
-            )
-
-        else:
-
-            st.warning(
-                "Portrait generation unavailable"
-            )
-
-    except Exception as e:
-
-        st.warning(
-            f"Unable to load portrait: {e}"
+        st.markdown(
+            st.session_state.character
         )
 
-    with st.expander("Debug Image URL"):
-        st.code(image_url)
-
-with col2:
-
-    st.markdown(
-        st.session_state.character
+    st.download_button(
+        label="📥 Download Character",
+        data=str(st.session_state.character),
+        file_name="character.txt",
+        mime="text/plain"
     )
 
-st.download_button(
-    label="📥 Download Character",
-    data=str(st.session_state.character),
-    file_name="character.txt",
-    mime="text/plain"
-)
+    st.divider()
 
-st.divider()
+    st.subheader("💬 Chat With Character")
 
-st.subheader("💬 Chat With Character")
+    for role, message in st.session_state.chat_history:
 
-for role, message in st.session_state.chat_history:
+        with st.chat_message(role):
+            st.markdown(message)
 
-    with st.chat_message(role):
-
-        st.markdown(message)
-
-user_input = st.chat_input(
-    "Talk to your character..."
-)
-
-if user_input:
-
-    response = chat_with_character(
-        st.session_state.character,
-        user_input
+    user_input = st.chat_input(
+        "Talk to your character..."
     )
 
-    st.session_state.chat_history.append(
-        ("user", user_input)
-    )
+    if user_input:
 
-    st.session_state.chat_history.append(
-        ("assistant", response)
-    )
+        st.session_state.chat_history.append(
+            ("user", user_input)
+        )
 
-    st.rerun()
+        response = chat_with_character(
+            st.session_state.character,
+            user_input
+        )
+
+        st.session_state.chat_history.append(
+            ("assistant", response)
+        )
+
+        st.rerun()
 
 else:
 
-  st.info(
-     "Create a character from the sidebar to begin."
-)
+    st.info(
+        "Create a character from the sidebar to begin."
+    )
