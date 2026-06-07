@@ -260,4 +260,3 @@ else:
     st.info(
         "Create a character from the sidebar to begin."
     )
-```
