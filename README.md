@@ -151,10 +151,11 @@ Create a `.env` file:
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here
+```
 
 ---
 
-📁 Project Structure
+# 📁 Project Structure
 <p align="center"> <img src="https://img.shields.io/badge/Project-Structure-blue?style=for-the-badge"/> <img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?style=for-the-badge"/> <img src="https://img.shields.io/badge/Python-Code-3776AB?style=for-the-badge"/> </p>
 characterforge-ai/
 │── app.py
@@ -178,7 +179,7 @@ Kaelin Darkshadow, a shadow mage born in eternal twilight, master of illusions a
 
 ---
 
-⚙️ Features Breakdown
+# ⚙️ Features Breakdown
 
 🧠 AI Engine
 <p align="center"> <img src="https://img.shields.io/badge/Groq-LLM-orange?style=for-the-badge"/> <img src="https://img.shields.io/badge/Fast-Inference-success?style=for-the-badge"/> </p>
@@ -189,7 +190,7 @@ Role-based character system
 
 ---
 
-🎭 Character System
+# 🎭 Character System
 <p align="center"> <img src="https://img.shields.io/badge/AI-Characters-purple?style=for-the-badge"/> <img src="https://img.shields.io/badge/RPG-Ready-blue?style=for-the-badge"/> </p>
 Dynamic personality generation
 Rich lore & worldbuilding
@@ -197,7 +198,7 @@ RPG-style immersion
 
 ---
 
-💬 Chat System
+# 💬 Chat System
 <p align="center"> <img src="https://img.shields.io/badge/Chat-Real%20Time-green?style=for-the-badge"/> <img src="https://img.shields.io/badge/Context-Aware-blue?style=for-the-badge"/> </p>
 Real-time conversation
 Session-based memory
@@ -205,7 +206,7 @@ Character consistency
 
 ---
 
-🎨 Image System
+# 🎨 Image System
 <p align="center"> <img src="https://img.shields.io/badge/Pollinations-AI-blue?style=for-the-badge"/> <img src="https://img.shields.io/badge/Fallback-DiceBear-lightgrey?style=for-the-badge"/> </p>
 Pollinations AI (free image generation)
 Stable fallback avatar system
@@ -213,7 +214,7 @@ Always renders an image
 
 ---
 
-📈 SaaS Vision
+# 📈 SaaS Vision
 <p align="center"> <img src="https://img.shields.io/badge/SaaS-Future%20Plan-blue?style=for-the-badge"/> <img src="https://img.shields.io/badge/Monetization-Ready-gold?style=for-the-badge"/> </p>
 🆓 Free Tier → limited characters
 💎 Pro Tier → unlimited generation
@@ -221,7 +222,7 @@ Always renders an image
 
 ---
 
-🧭 Roadmap
+# 🧭 Roadmap
 <p align="center"> <img src="https://img.shields.io/badge/AI-Roadmap-purple?style=for-the-badge"/> </p>
 🧠 Long-term memory system
 🎤 Voice-based characters
@@ -231,7 +232,7 @@ Always renders an image
 
 ---
 
-⚠️ Limitations
+# ⚠️ Limitations
 <p align="center"> <img src="https://img.shields.io/badge/Warning-Constraints-yellow?style=for-the-badge"/> </p>
 Requires internet connection
 External API dependency
@@ -239,7 +240,7 @@ Free tier rate limits may apply
 
 ---
 
-🤝 Contributing
+# 🤝 Contributing
 <p align="center"> <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge"/> </p>
 Fork repo
 Create feature branch
@@ -248,7 +249,7 @@ Open Pull Request
 
 ---
 
-⭐ Support
+# ⭐ Support
 <p align="center"> <img src="https://img.shields.io/badge/Support-Project-red?style=for-the-badge"/> <img src="https://img.shields.io/badge/Star%20Repo-Appreciated-yellow?style=for-the-badge"/> </p>
 
 If you like this project:
@@ -259,7 +260,7 @@ If you like this project:
 
 ---
 
-👨‍💻 Author
+# 👨‍💻 Author
 
 Built with ❤️ using:
 
@@ -269,7 +270,7 @@ Pollinations AI
 Python
 
 
-🔥 One-Line Pitch
+# 🔥 One-Line Pitch
 <p align="center"> <img src="https://img.shields.io/badge/CharacterForge-AI%20SaaS-purple?style=for-the-badge"/> </p>
 
 CharacterForge AI turns imagination into living, talking AI characters instantly.
