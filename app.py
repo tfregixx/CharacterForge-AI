@@ -1,4 +1,3 @@
-
 import os
 import urllib.parse
 
@@ -75,7 +74,9 @@ Format using markdown.
         ]
     )
 
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+
+    return str(content)
 
 
 def chat_with_character(
@@ -104,7 +105,9 @@ User:
         ]
     )
 
-    return response.choices[0].message.content
+    return str(
+        response.choices[0].message.content
+    )
 
 
 def generate_character_image_url(
@@ -168,16 +171,18 @@ with st.sidebar:
     ):
 
         with st.spinner(
-            "Generating character..."
+            "Generating Character..."
         ):
 
-            st.session_state.character = (
-                generate_character(
-                    genre,
-                    personality,
-                    powers
-                )
+            result = generate_character(
+                genre,
+                personality,
+                powers
             )
+
+            st.write(result)  # DEBUG
+
+            st.session_state.character = result
 
             st.session_state.image_url = (
                 generate_character_image_url(
@@ -199,18 +204,26 @@ st.caption(
     "Generate, visualize, and chat with AI-powered characters."
 )
 
-
 # ------------------------
 # CHARACTER PROFILE
 # ------------------------
 
 if st.session_state.character:
 
-    st.subheader("📜 Character Profile")
+    st.subheader(
+        "📜 Character Profile"
+    )
 
-    col1, col2 = st.columns([1, 2])
+    col1, col2 = st.columns(
+        [1, 2]
+    )
 
     with col1:
+
+        st.write("IMAGE URL:")
+        st.code(
+            st.session_state.image_url
+        )
 
         try:
 
@@ -220,17 +233,23 @@ if st.session_state.character:
                 use_container_width=True
             )
 
-        except Exception:
+        except Exception as e:
 
             st.warning(
-                "Image generation unavailable"
-            )
-
-            st.code(
-                st.session_state.image_url
+                f"Image generation unavailable: {e}"
             )
 
     with col2:
+
+        st.write(
+            type(
+                st.session_state.character
+            )
+        )
+
+        st.write(
+            st.session_state.character
+        )
 
         st.markdown(
             st.session_state.character
@@ -254,7 +273,9 @@ if st.session_state.character:
         "💬 Chat With Character"
     )
 
-    for role, message in st.session_state.chat_history:
+    for role, message in (
+        st.session_state.chat_history
+    ):
 
         with st.chat_message(role):
 
@@ -267,20 +288,28 @@ if st.session_state.character:
     if user_input:
 
         st.session_state.chat_history.append(
-            ("user", user_input)
+            (
+                "user",
+                user_input
+            )
         )
 
         with st.spinner(
             "Character is thinking..."
         ):
 
-            response = chat_with_character(
-                st.session_state.character,
-                user_input
+            response = (
+                chat_with_character(
+                    st.session_state.character,
+                    user_input
+                )
             )
 
         st.session_state.chat_history.append(
-            ("assistant", response)
+            (
+                "assistant",
+                response
+            )
         )
 
         st.rerun()
@@ -290,5 +319,4 @@ else:
     st.info(
         "Create a character from the sidebar to begin."
     )
-
 
