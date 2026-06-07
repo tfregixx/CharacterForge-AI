@@ -1,3 +1,4 @@
+```python
 import os
 import urllib.parse
 
@@ -30,6 +31,9 @@ if "character" not in st.session_state:
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+
+if "image_url" not in st.session_state:
+    st.session_state.image_url = None
 
 # ------------------------
 # AI FUNCTIONS
@@ -103,6 +107,29 @@ User:
     return response.choices[0].message.content
 
 
+def generate_character_image_url(
+    genre,
+    personality,
+    powers
+):
+    prompt = urllib.parse.quote(
+        f"{genre} character, "
+        f"{personality}, "
+        f"{powers}, "
+        f"fantasy concept art, "
+        f"highly detailed, "
+        f"cinematic lighting, "
+        f"masterpiece, "
+        f"4k"
+    )
+
+    return (
+        f"https://image.pollinations.ai/prompt/{prompt}"
+        "?width=1024"
+        "&height=1024"
+        "&nologo=true"
+    )
+
 # ------------------------
 # SIDEBAR
 # ------------------------
@@ -117,7 +144,9 @@ with st.sidebar:
             "Fantasy",
             "Sci-Fi",
             "Anime",
-            "Cyberpunk"
+            "Cyberpunk",
+            "Superhero",
+            "Steampunk"
         ]
     )
 
@@ -141,6 +170,14 @@ with st.sidebar:
                 powers
             )
 
+            st.session_state.image_url = (
+                generate_character_image_url(
+                    genre,
+                    personality,
+                    powers
+                )
+            )
+
             st.session_state.chat_history = []
 
 # ------------------------
@@ -150,7 +187,7 @@ with st.sidebar:
 st.title("🎭 CharacterForge AI")
 
 st.caption(
-    "Generate, chat, and manage AI characters"
+    "Generate, visualize, and chat with AI characters"
 )
 
 # ------------------------
@@ -161,22 +198,13 @@ if st.session_state.character:
 
     st.subheader("Character Profile")
 
-    avatar_seed = urllib.parse.quote(
-        f"{genre}-{personality}-{powers}"
-    )
-
-    avatar_url = (
-        f"https://api.dicebear.com/9.x/adventurer/png"
-        f"?seed={avatar_seed}"
-    )
-
     col1, col2 = st.columns([1, 2])
 
     with col1:
 
         st.image(
-            avatar_url,
-            caption="🎨 Character Avatar",
+            st.session_state.image_url,
+            caption="🎨 AI Generated Character",
             use_container_width=True
         )
 
@@ -188,12 +216,16 @@ if st.session_state.character:
 
     st.download_button(
         label="📥 Download Character",
-        data=str(st.session_state.character),
+        data=st.session_state.character,
         file_name="character.txt",
         mime="text/plain"
     )
 
     st.divider()
+
+    # ------------------------
+    # CHAT
+    # ------------------------
 
     st.subheader("💬 Chat With Character")
 
@@ -228,3 +260,4 @@ else:
     st.info(
         "Create a character from the sidebar to begin."
     )
+```
