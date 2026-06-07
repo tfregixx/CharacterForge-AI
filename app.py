@@ -199,7 +199,7 @@ st.caption(
     "Generate, visualize, and chat with AI-powered characters."
 )
 
-```python
+
 # ------------------------
 # CHARACTER PROFILE
 # ------------------------
