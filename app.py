@@ -90,7 +90,7 @@ User: {user_message}
 
 
 # ------------------------
-# 🔥 FIXED POLLINATIONS IMAGE GENERATOR
+# POLLINATIONS IMAGE (STABLE)
 # ------------------------
 
 def generate_character_image_url(genre, personality, powers):
@@ -99,15 +99,14 @@ def generate_character_image_url(genre, personality, powers):
         f"{genre} dark fantasy character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"cinematic lighting, ultra detailed, digital painting, concept art"
+        f"cinematic lighting, ultra detailed face, digital painting"
     )
 
     encoded = urllib.parse.quote_plus(prompt)
 
-    # 🔥 more stable endpoint format
     return (
-        f"https://image.pollinations.ai/prompt/{encoded}"
-        f"?width=512&height=512&model=flux&nologo=true"
+        "https://image.pollinations.ai/prompt/"
+        f"{encoded}?model=flux&width=512&height=512&nologo=true"
     )
 
 
@@ -151,7 +150,7 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Pollinations AI (Stable Image Mode)")
+st.caption("Groq + Pollinations AI (Fully Stable Rendering Mode)")
 
 
 # ------------------------
@@ -168,22 +167,28 @@ if st.session_state.character:
 
         fallback = (
             "https://api.dicebear.com/9.x/adventurer/png"
-            f"?seed={urllib.parse.quote(st.session_state.character[:50])}"
+            f"?seed={urllib.parse.quote(st.session_state.character[:60])}"
         )
 
-        if st.session_state.image_url:
+        img_url = st.session_state.image_url or fallback
 
-            st.markdown(
-                f"""
-                <img src="{st.session_state.image_url}"
-                     onerror="this.src='{fallback}'"
-                     style="width:100%; border-radius:15px;">
-                """,
-                unsafe_allow_html=True
-            )
-
-        else:
-            st.image(fallback, caption="Fallback Avatar")
+        st.markdown(
+            f"""
+            <div style="display:flex; justify-content:center;">
+                <img
+                    src="{img_url}"
+                    style="
+                        width:100%;
+                        max-width:420px;
+                        border-radius:16px;
+                        box-shadow:0px 10px 30px rgba(0,0,0,0.3);
+                    "
+                    onerror="this.onerror=null;this.src='{fallback}';"
+                />
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     with col2:
         st.markdown(st.session_state.character)
@@ -197,7 +202,7 @@ if st.session_state.character:
     st.divider()
 
     # ------------------------
-    # CHAT
+    # CHAT SECTION
     # ------------------------
 
     st.subheader("💬 Chat With Character")
@@ -224,3 +229,4 @@ if st.session_state.character:
 else:
 
     st.info("Create a character from the sidebar to begin.")
+        
