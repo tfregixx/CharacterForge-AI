@@ -1,6 +1,5 @@
 import os
 import time
-import urllib.parse
 import requests
 from io import BytesIO
 
@@ -26,7 +25,6 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 client = Groq(api_key=GROQ_API_KEY)
 
-# ⚠️ Using more stable HF model
 HF_API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
 
 headers = {
@@ -48,7 +46,7 @@ if "image" not in st.session_state:
 
 
 # ------------------------
-# CHARACTER GENERATION (GROQ)
+# CHARACTER GENERATION
 # ------------------------
 
 def generate_character(genre, personality, powers):
@@ -61,14 +59,7 @@ Personality: {personality}
 Powers: {powers}
 
 Include:
-Name
-Age
-Appearance
-Backstory
-Strengths
-Weaknesses
-Abilities
-Catchphrase
+Name, Age, Appearance, Backstory, Strengths, Weaknesses, Abilities, Catchphrase
 """
 
     response = client.chat.completions.create(
@@ -80,7 +71,7 @@ Catchphrase
 
 
 # ------------------------
-# CHAT FUNCTION
+# CHAT
 # ------------------------
 
 def chat_with_character(character, user_message):
@@ -104,56 +95,70 @@ User: {user_message}
 
 
 # ------------------------
-# 🔥 FIXED IMAGE FUNCTION (FULL CONNECTION SAFETY)
+# IMAGE GENERATION (SAFE + DEBUG)
 # ------------------------
 
 def generate_image(prompt_text):
 
     payload = {"inputs": prompt_text}
 
-    for attempt in range(3):  # retry system
+    st.write("HF API:", HF_API_URL)
+    st.write("HF Token Loaded:", bool(HF_TOKEN))
+
+    for attempt in range(3):
 
         try:
             response = requests.post(
                 HF_API_URL,
                 headers=headers,
                 json=payload,
-                timeout=120  # important fix
+                timeout=90
             )
 
-            # SUCCESS
-            if response.status_code == 200:
-                try:
-                    return Image.open(BytesIO(response.content))
-                except:
-                    return None
-
-            # MODEL LOADING
-            if response.status_code == 503:
-                time.sleep(5)
-                continue
-
-            # AUTH ERROR
-            if response.status_code == 401:
-                st.error("❌ HF Token missing or invalid")
-                return None
-
-            st.warning(f"HF Error: {response.status_code}")
-            return None
-
-        # 🔥 CONNECTION FIX (MAIN BUG YOU HAD)
         except requests.exceptions.ConnectionError:
-            st.warning("⚠️ Connection failed to Hugging Face, retrying...")
-            time.sleep(3)
-            continue
-
-        except requests.exceptions.Timeout:
-            st.warning("⏱ Request timed out, retrying...")
-            continue
+            st.error("❌ ConnectionError: Hugging Face unreachable")
+            return None
 
         except Exception as e:
-            st.error(f"Unexpected error: {e}")
+            st.error(f"❌ Unexpected error: {e}")
             return None
+
+        # ------------------------
+        # DEBUG OUTPUT
+        # ------------------------
+        st.write("STATUS CODE:", response.status_code)
+
+        try:
+            st.write("RESPONSE TEXT (preview):", str(response.text)[:200])
+        except:
+            st.write("RESPONSE TEXT: binary data")
+
+        # ------------------------
+        # SUCCESS
+        # ------------------------
+        if response.status_code == 200:
+            try:
+                return Image.open(BytesIO(response.content))
+            except:
+                st.error("Failed to decode image")
+                return None
+
+        # ------------------------
+        # MODEL LOADING
+        # ------------------------
+        if response.status_code == 503:
+            st.warning("Model loading... retrying")
+            time.sleep(5)
+            continue
+
+        # ------------------------
+        # AUTH ERROR
+        # ------------------------
+        if response.status_code == 401:
+            st.error("Invalid HF token")
+            return None
+
+        return None
 
     return None
 
@@ -178,14 +183,14 @@ with st.sidebar:
 
         with st.spinner("Generating character..."):
 
-            character = generate_character(genre, personality, powers)
-            st.session_state.character = character
+            st.session_state.character = generate_character(
+                genre, personality, powers
+            )
 
             image_prompt = (
                 f"{genre} fantasy warrior, "
                 f"{personality}, "
-                f"{powers}, "
-                f"cinematic lighting, ultra detailed"
+                f"{powers}, cinematic lighting, ultra detailed"
             )
 
             st.session_state.image = generate_image(image_prompt)
@@ -198,11 +203,11 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Hugging Face Stable Image Generator")
+st.caption("Groq + Hugging Face Debug Mode Enabled")
 
 
 # ------------------------
-# DISPLAY CHARACTER
+# DISPLAY
 # ------------------------
 
 if st.session_state.character:
@@ -220,16 +225,7 @@ if st.session_state.character:
                 use_container_width=True
             )
         else:
-            st.warning("⚠️ Image failed (HF connection issue or rate limit)")
-
-            if st.button("🔄 Retry Image"):
-                image_prompt = (
-                    f"{genre} fantasy warrior, "
-                    f"{personality}, "
-                    f"{powers}, cinematic lighting"
-                )
-                st.session_state.image = generate_image(image_prompt)
-                st.rerun()
+            st.warning("Image failed (check HF logs above)")
 
     with col2:
         st.markdown(st.session_state.character)
@@ -241,10 +237,6 @@ if st.session_state.character:
     )
 
     st.divider()
-
-    # ------------------------
-    # CHAT
-    # ------------------------
 
     st.subheader("💬 Chat With Character")
 
