@@ -1,6 +1,5 @@
 import os
 import urllib.parse
-import requests
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -91,21 +90,25 @@ User: {user_message}
 
 
 # ------------------------
-# POLLINATIONS IMAGE (FIXED + SAFE)
+# 🔥 FIXED POLLINATIONS IMAGE GENERATOR
 # ------------------------
 
 def generate_character_image_url(genre, personality, powers):
 
     prompt = (
-        f"{genre} fantasy character portrait, "
+        f"{genre} dark fantasy character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"cinematic lighting, ultra detailed face, digital art"
+        f"cinematic lighting, ultra detailed, digital painting, concept art"
     )
 
-    encoded = urllib.parse.quote(prompt)
+    encoded = urllib.parse.quote_plus(prompt)
 
-    return f"https://image.pollinations.ai/prompt/{encoded}?model=flux"
+    # 🔥 more stable endpoint format
+    return (
+        f"https://image.pollinations.ai/prompt/{encoded}"
+        f"?width=512&height=512&model=flux&nologo=true"
+    )
 
 
 # ------------------------
@@ -148,7 +151,7 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Pollinations AI (Zero Error Image Mode)")
+st.caption("Groq + Pollinations AI (Stable Image Mode)")
 
 
 # ------------------------
@@ -163,21 +166,24 @@ if st.session_state.character:
 
     with col1:
 
-        # 🔥 SAFE IMAGE RENDER (NO CRASH EVER)
+        fallback = (
+            "https://api.dicebear.com/9.x/adventurer/png"
+            f"?seed={urllib.parse.quote(st.session_state.character[:50])}"
+        )
+
         if st.session_state.image_url:
 
-            try:
-                st.image(
-                    st.session_state.image_url,
-                    caption="🎨 AI Character Portrait",
-                    use_container_width=True
-                )
-            except Exception:
-                st.warning("Image failed to load, but app continues safely")
-                st.code(st.session_state.image_url)
+            st.markdown(
+                f"""
+                <img src="{st.session_state.image_url}"
+                     onerror="this.src='{fallback}'"
+                     style="width:100%; border-radius:15px;">
+                """,
+                unsafe_allow_html=True
+            )
 
         else:
-            st.warning("No image generated")
+            st.image(fallback, caption="Fallback Avatar")
 
     with col2:
         st.markdown(st.session_state.character)
