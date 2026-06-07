@@ -1,7 +1,10 @@
 import os
 import urllib.parse
+import requests
+from io import BytesIO
 
 import streamlit as st
+from PIL import Image
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -90,7 +93,7 @@ User: {user_message}
 
 
 # ------------------------
-# IMAGE (STABLE + SAFE)
+# POLLINATIONS IMAGE (FIXED PROPERLY)
 # ------------------------
 
 def generate_character_image_url(genre, personality, powers):
@@ -99,17 +102,34 @@ def generate_character_image_url(genre, personality, powers):
         f"{genre} fantasy character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"cinematic lighting, ultra detailed, high quality digital art"
+        f"cinematic lighting, ultra detailed face, digital painting, high quality"
     )
 
     encoded = urllib.parse.quote(prompt)
 
-    # Pollinations (optional, may fail)
     return (
         "https://image.pollinations.ai/prompt/"
         f"{encoded}"
-        "?model=flux&width=1024&height=1024&nologo=true"
+        "?model=flux&width=1024&height=1024&enhance=true&nologo=true"
     )
+
+
+# ------------------------
+# SAFE IMAGE LOADER (IMPORTANT)
+# ------------------------
+
+def load_image(url):
+
+    try:
+        r = requests.get(url, timeout=15)
+
+        if r.status_code == 200 and "image" in r.headers.get("Content-Type", ""):
+            return Image.open(BytesIO(r.content))
+
+    except Exception:
+        pass
+
+    return None
 
 
 # ------------------------
@@ -132,10 +152,11 @@ with st.sidebar:
 
         with st.spinner("Generating character..."):
 
-            character = generate_character(genre, personality, powers)
-
-            # IMPORTANT: prevent accidental bad values like 0
-            st.session_state.character = str(character)
+            st.session_state.character = generate_character(
+                genre,
+                personality,
+                powers
+            )
 
             st.session_state.image_url = generate_character_image_url(
                 genre,
@@ -151,7 +172,8 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq-powered character generator")
+st.caption("Groq + Pollinations AI Character Generator")
+
 
 # ------------------------
 # CHARACTER DISPLAY
@@ -165,25 +187,13 @@ if st.session_state.character:
 
     with col1:
 
-        # ALWAYS WORKING IMAGE (NO FAIL)
-        fallback_avatar = (
-            "https://api.dicebear.com/9.x/adventurer/png"
-            f"?seed={urllib.parse.quote(personality + powers)}"
-        )
+        img = load_image(st.session_state.image_url)
 
-        # Pollinations try → fallback guaranteed
-        if st.session_state.image_url:
-            st.image(
-                st.session_state.image_url,
-                caption="🎨 AI Character Portrait",
-                use_container_width=True
-            )
+        if img:
+            st.image(img, caption="🎨 AI Character Portrait", use_container_width=True)
         else:
-            st.image(
-                fallback_avatar,
-                caption="🎨 Character Avatar",
-                use_container_width=True
-            )
+            st.warning("Image generation failed (Pollinations API issue)")
+            st.code(st.session_state.image_url)
 
     with col2:
 
