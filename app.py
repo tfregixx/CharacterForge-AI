@@ -1,4 +1,4 @@
-
+```python
 import os
 import urllib.parse
 
@@ -13,7 +13,7 @@ load_dotenv()
 # ------------------------
 
 st.set_page_config(
-    page_title="CharacterForge AI",
+    page_title="🎭 CharacterForge AI",
     page_icon="🎭",
     layout="wide"
 )
@@ -113,20 +113,27 @@ def generate_character_image_url(
     powers
 ):
     prompt = urllib.parse.quote(
-        f"{genre} character, "
-        f"{personality}, "
-        f"{powers}, "
-        f"fantasy concept art, "
-        f"highly detailed, "
-        f"cinematic lighting, "
-        f"masterpiece, "
-        f"4k"
+        f"""
+        {genre} fantasy character,
+        {personality},
+        powers: {powers},
+        character portrait,
+        highly detailed,
+        fantasy concept art,
+        cinematic lighting,
+        masterpiece,
+        ultra detailed,
+        sharp focus,
+        digital painting,
+        artstation quality
+        """
     )
 
     return (
         f"https://image.pollinations.ai/prompt/{prompt}"
         "?width=1024"
         "&height=1024"
+        "&seed=42"
         "&nologo=true"
     )
 
@@ -136,7 +143,7 @@ def generate_character_image_url(
 
 with st.sidebar:
 
-    st.header("Create Character")
+    st.header("🎨 Create Character")
 
     genre = st.selectbox(
         "Genre",
@@ -146,7 +153,8 @@ with st.sidebar:
             "Anime",
             "Cyberpunk",
             "Superhero",
-            "Steampunk"
+            "Steampunk",
+            "Horror"
         ]
     )
 
@@ -160,14 +168,21 @@ with st.sidebar:
         "Shadow Magic"
     )
 
-    if st.button("Generate Character"):
+    if st.button(
+        "Generate Character",
+        use_container_width=True
+    ):
 
-        with st.spinner("Generating Character..."):
+        with st.spinner(
+            "Generating character..."
+        ):
 
-            st.session_state.character = generate_character(
-                genre,
-                personality,
-                powers
+            st.session_state.character = (
+                generate_character(
+                    genre,
+                    personality,
+                    powers
+                )
             )
 
             st.session_state.image_url = (
@@ -187,7 +202,7 @@ with st.sidebar:
 st.title("🎭 CharacterForge AI")
 
 st.caption(
-    "Generate, visualize, and chat with AI characters"
+    "Generate, visualize, and chat with AI-powered characters."
 )
 
 # ------------------------
@@ -196,9 +211,13 @@ st.caption(
 
 if st.session_state.character:
 
-    st.subheader("Character Profile")
+    st.subheader(
+        "📜 Character Profile"
+    )
 
-    col1, col2 = st.columns([1, 2])
+    col1, col2 = st.columns(
+        [1, 2]
+    )
 
     with col1:
 
@@ -218,20 +237,26 @@ if st.session_state.character:
         label="📥 Download Character",
         data=st.session_state.character,
         file_name="character.txt",
-        mime="text/plain"
+        mime="text/plain",
+        use_container_width=True
     )
 
     st.divider()
 
     # ------------------------
-    # CHAT
+    # CHAT SECTION
     # ------------------------
 
-    st.subheader("💬 Chat With Character")
+    st.subheader(
+        "💬 Chat With Character"
+    )
 
-    for role, message in st.session_state.chat_history:
+    for role, message in (
+        st.session_state.chat_history
+    ):
 
         with st.chat_message(role):
+
             st.markdown(message)
 
     user_input = st.chat_input(
@@ -241,16 +266,28 @@ if st.session_state.character:
     if user_input:
 
         st.session_state.chat_history.append(
-            ("user", user_input)
+            (
+                "user",
+                user_input
+            )
         )
 
-        response = chat_with_character(
-            st.session_state.character,
-            user_input
-        )
+        with st.spinner(
+            "Character is thinking..."
+        ):
+
+            response = (
+                chat_with_character(
+                    st.session_state.character,
+                    user_input
+                )
+            )
 
         st.session_state.chat_history.append(
-            ("assistant", response)
+            (
+                "assistant",
+                response
+            )
         )
 
         st.rerun()
@@ -260,3 +297,4 @@ else:
     st.info(
         "Create a character from the sidebar to begin."
     )
+```
