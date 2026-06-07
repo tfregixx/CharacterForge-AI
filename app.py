@@ -104,7 +104,51 @@ User:
     )
 
     return response.choices[0].message.content
+def generate_character_image(
+genre,
+personality,
+powers
+):
+api_url = (
+"https://api-inference.huggingface.co/models/"
+"stabilityai/stable-diffusion-xl-base-1.0"
+)
 
+headers = {
+    "Authorization": f"Bearer {os.getenv('HF_TOKEN')}"
+}
+
+prompt = (
+    f"{genre} character, "
+    f"{personality}, "
+    f"{powers}, "
+    f"fantasy concept art, "
+    f"highly detailed, "
+    f"cinematic lighting"
+)
+
+try:
+
+    response = requests.post(
+        api_url,
+        headers=headers,
+        json={
+            "inputs": prompt
+        },
+        timeout=180
+    )
+
+    if response.status_code == 200:
+
+        return Image.open(
+            BytesIO(response.content)
+        )
+
+    return None
+
+except Exception:
+
+    return None
 
 # ------------------------
 # SIDEBAR
@@ -134,17 +178,25 @@ with st.sidebar:
         "Shadow Magic"
     )
 
-    if st.button("Generate Character"):
+  if st.button("Generate Character"):
 
-        with st.spinner("Generating Character..."):
+  with st.spinner("Generating Character..."):
 
-            st.session_state.character = generate_character(
-                genre,
-                personality,
-                powers
-            )
+    st.session_state.character = generate_character(
+        genre,
+        personality,
+        powers
+    )
 
-            st.session_state.chat_history = []
+    st.session_state.character_image = (
+        generate_character_image(
+            genre,
+            personality,
+            powers
+        )
+    )
+
+    st.session_state.chat_history = []
 
 # ------------------------
 # MAIN
