@@ -1,4 +1,4 @@
-```python
+
 import os
 import urllib.parse
 
@@ -297,4 +297,4 @@ else:
     st.info(
         "Create a character from the sidebar to begin."
     )
-```
+
