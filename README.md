@@ -177,11 +177,11 @@ characterforge-ai/
  <img src="https://img.shields.io/badge/Storytelling-Enabled-success?style=for-the-badge"/> 
 </p>
 
-User:
+- User:
 
 Create a fantasy character
 
-AI:
+- AI:
 
 Kaelin Darkshadow, a shadow mage born in eternal twilight, master of illusions and darkness…
 
@@ -195,9 +195,9 @@ Kaelin Darkshadow, a shadow mage born in eternal twilight, master of illusions a
  <img src="https://img.shields.io/badge/Fast-Inference-success?style=for-the-badge"/>
 </p>
 
-Groq LLM (fast inference)
-High-quality storytelling
-Role-based character system
+- Groq LLM (fast inference)
+- High-quality storytelling
+- Role-based character system
 
 ---
 
@@ -207,9 +207,9 @@ Role-based character system
  <img src="https://img.shields.io/badge/RPG-Ready-blue?style=for-the-badge"/>
 </p>
 
-Dynamic personality generation
-Rich lore & worldbuilding
-RPG-style immersion
+- Dynamic personality generation
+- Rich lore & worldbuilding
+- RPG-style immersion
 
 ---
 
@@ -262,9 +262,9 @@ Always renders an image
 <p align="center">
  <img src="https://img.shields.io/badge/Warning-Constraints-yellow?style=for-the-badge"/> 
 </p>
-Requires internet connection
-External API dependency
-Free tier rate limits may apply
+- Requires internet connection
+- External API dependency
+- Free tier rate limits may apply
 
 ---
 
@@ -272,10 +272,10 @@ Free tier rate limits may apply
 <p align="center">
  <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge"/> 
 </p>
-Fork repo
-Create feature branch
-Commit changes
-Open Pull Request
+- Fork repo
+- Create feature branch
+- Commit changes
+- Open Pull Request
 
 ---
 
@@ -287,9 +287,9 @@ Open Pull Request
 
 If you like this project:
 
-⭐ Star the repo
-🍴 Fork it
-🚀 Share it
+- ⭐ Star the repo
+- 🍴 Fork it
+- 🚀 Share it
 
 ---
 
@@ -297,10 +297,10 @@ If you like this project:
 
 Built with ❤️ using:
 
-Groq AI
-Streamlit
-Pollinations AI
-Python
+- Groq AI
+- Streamlit
+- Pollinations AI
+- Python
 
 
 # 🔥 One-Line Pitch
