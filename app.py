@@ -1,4 +1,5 @@
 import os
+import time
 import urllib.parse
 import requests
 from io import BytesIO
@@ -21,7 +22,9 @@ st.set_page_config(
 )
 
 HF_TOKEN = os.getenv("HF_TOKEN")
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+client = Groq(api_key=GROQ_API_KEY)
 
 # Hugging Face SDXL endpoint
 HF_API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
@@ -45,7 +48,7 @@ if "image" not in st.session_state:
 
 
 # ------------------------
-# CHARACTER GENERATION
+# CHARACTER GENERATION (GROQ)
 # ------------------------
 
 def generate_character(genre, personality, powers):
@@ -101,23 +104,41 @@ User: {user_message}
 
 
 # ------------------------
-# IMAGE GENERATION (HUGGINGFACE SDXL)
+# IMAGE GENERATION (HUGGING FACE FIXED)
 # ------------------------
 
 def generate_image(prompt_text):
 
-    try:
+    payload = {"inputs": prompt_text}
+
+    for attempt in range(3):  # retry system
+
         response = requests.post(
             HF_API_URL,
             headers=headers,
-            json={"inputs": prompt_text},
-            timeout=60
+            json=payload,
+            timeout=90
         )
 
+        # ✅ success
         if response.status_code == 200:
-            return Image.open(BytesIO(response.content))
+            try:
+                return Image.open(BytesIO(response.content))
+            except:
+                return None
 
-    except Exception:
+        # ⏳ model loading
+        if response.status_code == 503:
+            time.sleep(5)
+            continue
+
+        # ❌ invalid token
+        if response.status_code == 401:
+            st.error("HF Token invalid or missing")
+            return None
+
+        # ❌ other errors
+        st.warning(f"HF error: {response.status_code}")
         return None
 
     return None
@@ -141,17 +162,17 @@ with st.sidebar:
 
     if st.button("Generate Character", use_container_width=True):
 
-        with st.spinner("Creating character..."):
+        with st.spinner("Generating character..."):
 
             character = generate_character(genre, personality, powers)
-
             st.session_state.character = character
 
+            # 🔥 SIMPLE SAFE IMAGE PROMPT (IMPORTANT)
             image_prompt = (
-                f"{genre} character portrait, "
+                f"{genre} fantasy warrior, "
                 f"{personality}, "
                 f"{powers}, "
-                f"cinematic lighting, ultra detailed face, fantasy digital art"
+                f"cinematic lighting, ultra detailed"
             )
 
             st.session_state.image = generate_image(image_prompt)
@@ -186,7 +207,7 @@ if st.session_state.character:
                 use_container_width=True
             )
         else:
-            st.warning("Image generation failed (HF API issue)")
+            st.warning("Image generation failed (HF is loading or rate limited)")
 
     with col2:
 
@@ -228,4 +249,3 @@ if st.session_state.character:
 else:
 
     st.info("Create a character from the sidebar to begin.")
-    
