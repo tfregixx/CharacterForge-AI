@@ -66,47 +66,38 @@ Catchphrase
 
 
 # ------------------------
-# CHAT FUNCTION
+# CHAT
 # ------------------------
 
 def chat_with_character(character, user_message):
 
-    prompt = f"""
-You are this character:
-
-{character}
-
-Stay fully in character.
-
-User: {user_message}
-"""
-
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{
+            "role": "user",
+            "content": f"You are this character:\n\n{character}\n\nUser: {user_message}"
+        }]
     )
 
     return str(response.choices[0].message.content)
 
 
 # ------------------------
-# POLLINATIONS IMAGE (NO REQUESTS - SAFE)
+# FREE IMAGE SYSTEM (STABLE)
 # ------------------------
 
-def generate_character_image_url(genre, personality, powers):
+def generate_image_url(genre, personality, powers):
 
     prompt = urllib.parse.quote_plus(
-        f"{genre} fantasy character portrait, "
-        f"{personality}, "
-        f"{powers}, "
-        f"cinematic lighting, ultra detailed face, digital art"
+        f"{genre} fantasy character portrait, {personality}, {powers}, cinematic lighting, ultra detailed"
     )
 
+    # Pollinations (try first)
     return f"https://image.pollinations.ai/prompt/{prompt}?model=flux"
 
 
-# fallback image (always works)
-def fallback_image(personality, powers):
+def fallback_avatar(personality, powers):
+
     return (
         "https://api.dicebear.com/9.x/adventurer/png"
         f"?seed={urllib.parse.quote_plus(personality + powers)}"
@@ -121,31 +112,25 @@ with st.sidebar:
 
     st.header("🎨 Create Character")
 
-    genre = st.selectbox(
-        "Genre",
-        ["Fantasy", "Sci-Fi", "Anime", "Cyberpunk", "Horror"]
-    )
-
+    genre = st.selectbox("Genre", ["Fantasy", "Sci-Fi", "Anime", "Cyberpunk", "Horror"])
     personality = st.text_input("Personality", "Brave and mysterious")
     powers = st.text_input("Powers", "Shadow Magic")
 
     if st.button("Generate Character", use_container_width=True):
 
-        with st.spinner("Generating character..."):
+        st.session_state.character = generate_character(
+            genre,
+            personality,
+            powers
+        )
 
-            st.session_state.character = generate_character(
-                genre,
-                personality,
-                powers
-            )
+        st.session_state.image_url = generate_image_url(
+            genre,
+            personality,
+            powers
+        )
 
-            st.session_state.image_url = generate_character_image_url(
-                genre,
-                personality,
-                powers
-            )
-
-            st.session_state.chat_history = []
+        st.session_state.chat_history = []
 
 
 # ------------------------
@@ -153,10 +138,10 @@ with st.sidebar:
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-st.caption("Groq + Pollinations (device-safe mode)")
+st.caption("Groq + Free Stable Image System (No API keys needed)")
 
 # ------------------------
-# DISPLAY CHARACTER
+# DISPLAY
 # ------------------------
 
 if st.session_state.character:
@@ -167,19 +152,18 @@ if st.session_state.character:
 
     with col1:
 
-        img_url = st.session_state.image_url
-
-        if not img_url:
-            img_url = fallback_image(personality, powers)
+        img = st.session_state.image_url
 
         st.markdown(
             f"""
-            <img src="{img_url}"
+            <img src="{img}"
                  style="width:100%; border-radius:12px;"
-                 onerror="this.src='{fallback_image(personality, powers)}'">
+                 onerror="this.src='{fallback_avatar(personality, powers)}'">
             """,
             unsafe_allow_html=True
         )
+
+        st.caption("If image fails → fallback avatar used")
 
     with col2:
         st.markdown(st.session_state.character)
