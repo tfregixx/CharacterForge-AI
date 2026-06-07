@@ -92,21 +92,24 @@ User: {user_message}
 
 
 # ------------------------
-# IMAGE (POLLINATIONS)
+# POLLINATIONS IMAGE (FIXED)
 # ------------------------
 
 def generate_character_image_url(genre, personality, powers):
 
-    prompt = urllib.parse.quote(
+    prompt = (
         f"{genre} cinematic character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"ultra detailed, fantasy art, dramatic lighting, high quality face"
+        f"ultra detailed, fantasy art, dramatic lighting, high quality"
     )
 
+    encoded = urllib.parse.quote(prompt)
+
     return (
-        f"https://image.pollinations.ai/prompt/{prompt}"
-        "?width=1024&height=1024&nologo=true"
+        "https://image.pollinations.ai/prompt/"
+        f"{encoded}"
+        "?model=flux&width=1024&height=1024&nologo=true"
     )
 
 
@@ -130,13 +133,11 @@ with st.sidebar:
 
         with st.spinner("Generating character..."):
 
-            character = generate_character(
+            st.session_state.character = generate_character(
                 genre,
                 personality,
                 powers
             )
-
-            st.session_state.character = character
 
             st.session_state.image_url = generate_character_image_url(
                 genre,
@@ -167,29 +168,25 @@ if st.session_state.character:
     with col1:
 
         fallback_avatar = (
-            f"https://api.dicebear.com/9.x/adventurer/png"
-            f"?seed={urllib.parse.quote(str(personality) + str(powers))}"
+            "https://api.dicebear.com/9.x/adventurer/png"
+            f"?seed={urllib.parse.quote(str(personality + powers))}"
         )
 
         if st.session_state.image_url:
 
-            st.markdown(
-                f"""
-                <img src="{st.session_state.image_url}"
-                     onerror="this.src='{fallback_avatar}'"
-                     style="width:100%; border-radius:15px;">
-                """,
-                unsafe_allow_html=True
+            # SAFE STREAMLIT IMAGE (MOST RELIABLE)
+            st.image(
+                st.session_state.image_url,
+                caption="🎨 AI Character Portrait",
+                use_container_width=True
             )
 
         else:
 
-            st.markdown(
-                f"""
-                <img src="{fallback_avatar}"
-                     style="width:100%; border-radius:15px;">
-                """,
-                unsafe_allow_html=True
+            st.image(
+                fallback_avatar,
+                caption="🎨 Fallback Avatar",
+                use_container_width=True
             )
 
     with col2:
