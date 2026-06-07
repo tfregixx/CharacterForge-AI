@@ -20,7 +20,7 @@ st.set_page_config(
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ------------------------
-# SESSION STATE
+# STATE
 # ------------------------
 
 if "character" not in st.session_state:
@@ -29,12 +29,9 @@ if "character" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if "image_url" not in st.session_state:
-    st.session_state.image_url = None
-
 
 # ------------------------
-# CHARACTER GENERATION (GROQ)
+# GROQ CHARACTER
 # ------------------------
 
 def generate_character(genre, personality, powers):
@@ -47,22 +44,15 @@ Personality: {personality}
 Powers: {powers}
 
 Include:
-Name
-Age
-Appearance
-Backstory
-Strengths
-Weaknesses
-Abilities
-Catchphrase
+Name, Age, Appearance, Backstory, Strengths, Weaknesses, Abilities, Catchphrase
 """
 
-    response = client.chat.completions.create(
+    res = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}]
     )
 
-    return str(response.choices[0].message.content)
+    return str(res.choices[0].message.content)
 
 
 # ------------------------
@@ -71,7 +61,7 @@ Catchphrase
 
 def chat_with_character(character, user_message):
 
-    response = client.chat.completions.create(
+    res = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{
             "role": "user",
@@ -79,69 +69,50 @@ def chat_with_character(character, user_message):
         }]
     )
 
-    return str(response.choices[0].message.content)
+    return str(res.choices[0].message.content)
 
 
 # ------------------------
-# FREE IMAGE SYSTEM (STABLE)
+# STABLE IMAGE (NO FAIL)
 # ------------------------
 
-def generate_image_url(genre, personality, powers):
+def generate_avatar(personality, powers):
 
-    prompt = urllib.parse.quote_plus(
-        f"{genre} fantasy character portrait, {personality}, {powers}, cinematic lighting, ultra detailed"
-    )
+    seed = urllib.parse.quote_plus(personality + powers)
 
-    # Pollinations (try first)
-    return f"https://image.pollinations.ai/prompt/{prompt}?model=flux"
-
-
-def fallback_avatar(personality, powers):
-
-    return (
-        "https://api.dicebear.com/9.x/adventurer/png"
-        f"?seed={urllib.parse.quote_plus(personality + powers)}"
-    )
+    return f"https://api.dicebear.com/9.x/adventurer/png?seed={seed}"
 
 
 # ------------------------
-# SIDEBAR
+# UI
 # ------------------------
+
+st.title("🎭 CharacterForge AI")
+st.caption("Groq-powered character generator (stable mode)")
 
 with st.sidebar:
 
     st.header("🎨 Create Character")
 
-    genre = st.selectbox("Genre", ["Fantasy", "Sci-Fi", "Anime", "Cyberpunk", "Horror"])
+    genre = st.selectbox(
+        "Genre",
+        ["Fantasy", "Sci-Fi", "Anime", "Cyberpunk", "Horror"]
+    )
+
     personality = st.text_input("Personality", "Brave and mysterious")
     powers = st.text_input("Powers", "Shadow Magic")
 
-    if st.button("Generate Character", use_container_width=True):
+    if st.button("Generate Character"):
 
         st.session_state.character = generate_character(
-            genre,
-            personality,
-            powers
-        )
-
-        st.session_state.image_url = generate_image_url(
-            genre,
-            personality,
-            powers
+            genre, personality, powers
         )
 
         st.session_state.chat_history = []
 
 
 # ------------------------
-# MAIN UI
-# ------------------------
-
-st.title("🎭 CharacterForge AI")
-st.caption("Groq + Free Stable Image System (No API keys needed)")
-
-# ------------------------
-# DISPLAY
+# MAIN
 # ------------------------
 
 if st.session_state.character:
@@ -152,33 +123,19 @@ if st.session_state.character:
 
     with col1:
 
-        img = st.session_state.image_url
+        avatar_url = generate_avatar(personality, powers)
 
-        st.markdown(
-            f"""
-            <img src="{img}"
-                 style="width:100%; border-radius:12px;"
-                 onerror="this.src='{fallback_avatar(personality, powers)}'">
-            """,
-            unsafe_allow_html=True
+        st.image(
+            avatar_url,
+            caption="🎨 Character Avatar",
+            use_container_width=True
         )
 
-        st.caption("If image fails → fallback avatar used")
-
     with col2:
+
         st.markdown(st.session_state.character)
 
-    st.download_button(
-        "📥 Download Character",
-        st.session_state.character,
-        file_name="character.txt"
-    )
-
     st.divider()
-
-    # ------------------------
-    # CHAT
-    # ------------------------
 
     st.subheader("💬 Chat With Character")
 
@@ -192,12 +149,9 @@ if st.session_state.character:
 
         st.session_state.chat_history.append(("user", user_input))
 
-        response = chat_with_character(
-            st.session_state.character,
-            user_input
-        )
+        reply = chat_with_character(st.session_state.character, user_input)
 
-        st.session_state.chat_history.append(("assistant", response))
+        st.session_state.chat_history.append(("assistant", reply))
 
         st.rerun()
 
