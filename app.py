@@ -1,3 +1,4 @@
+
 import os
 import urllib.parse
 
@@ -35,7 +36,7 @@ if "image_url" not in st.session_state:
     st.session_state.image_url = None
 
 # ------------------------
-# CHARACTER GENERATION (GROQ)
+# CHARACTER GENERATION
 # ------------------------
 
 def generate_character(genre, personality, powers):
@@ -67,7 +68,7 @@ Catchphrase
 
 
 # ------------------------
-# CHAT (GROQ)
+# CHAT
 # ------------------------
 
 def chat_with_character(character, user_message):
@@ -91,7 +92,7 @@ User: {user_message}
 
 
 # ------------------------
-# POLLINATIONS IMAGE
+# IMAGE (POLLINATIONS)
 # ------------------------
 
 def generate_character_image_url(genre, personality, powers):
@@ -100,7 +101,7 @@ def generate_character_image_url(genre, personality, powers):
         f"{genre} cinematic character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"ultra detailed, dramatic lighting, fantasy concept art, high quality face"
+        f"ultra detailed, fantasy art, dramatic lighting, high quality face"
     )
 
     return (
@@ -165,40 +166,30 @@ if st.session_state.character:
 
     with col1:
 
-        # fallback avatar (always works)
         fallback_avatar = (
-            "https://api.dicebear.com/9.x/adventurer/png"
-            f"?seed={urllib.parse.quote(powers + personality)}"
+            f"https://api.dicebear.com/9.x/adventurer/png"
+            f"?seed={urllib.parse.quote(str(personality) + str(powers))}"
         )
 
         if st.session_state.image_url:
 
-            try:
-                st.image(
-                    st.session_state.image_url,
-                    caption="🎨 AI Character Portrait",
-                    use_container_width=True
-                )
-
-                with st.expander("Open Image Directly"):
-                    st.markdown(
-                        f"[🔗 Open Image]({st.session_state.image_url})"
-                    )
-
-            except Exception:
-
-                st.image(
-                    fallback_avatar,
-                    caption="🎨 Fallback Avatar",
-                    use_container_width=True
-                )
+            st.markdown(
+                f"""
+                <img src="{st.session_state.image_url}"
+                     onerror="this.src='{fallback_avatar}'"
+                     style="width:100%; border-radius:15px;">
+                """,
+                unsafe_allow_html=True
+            )
 
         else:
 
-            st.image(
-                fallback_avatar,
-                caption="🎨 Default Avatar",
-                use_container_width=True
+            st.markdown(
+                f"""
+                <img src="{fallback_avatar}"
+                     style="width:100%; border-radius:15px;">
+                """,
+                unsafe_allow_html=True
             )
 
     with col2:
