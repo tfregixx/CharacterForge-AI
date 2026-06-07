@@ -361,3 +361,17 @@ else:
     st.info(
         "Create a character from the sidebar to begin."
     )
+
+import requests
+
+try:
+    r = requests.get(
+        "https://api-inference.huggingface.co",
+        timeout=20
+    )
+
+    st.write("HF Reachable")
+    st.write(r.status_code)
+
+except Exception as e:
+    st.error(f"HF Test Failed: {e}")
