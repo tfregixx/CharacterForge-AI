@@ -1,7 +1,10 @@
 import os
 import urllib.parse
+import requests
+from io import BytesIO
 
 import streamlit as st
+from PIL import Image
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -34,7 +37,7 @@ if "image_url" not in st.session_state:
 
 
 # ------------------------
-# CHARACTER GENERATION (GROQ)
+# CHARACTER GENERATION
 # ------------------------
 
 def generate_character(genre, personality, powers):
@@ -66,7 +69,7 @@ Catchphrase
 
 
 # ------------------------
-# CHAT (GROQ)
+# CHAT
 # ------------------------
 
 def chat_with_character(character, user_message):
@@ -90,22 +93,40 @@ User: {user_message}
 
 
 # ------------------------
-# POLLINATIONS IMAGE (FIXED)
+# POLLINATIONS IMAGE (FIXED + SAFE)
 # ------------------------
 
 def generate_character_image_url(genre, personality, powers):
 
     prompt = urllib.parse.quote(
-        f"{genre} character portrait, "
+        f"{genre} cinematic character portrait, "
         f"{personality}, "
         f"{powers}, "
-        f"cinematic lighting, ultra detailed face, fantasy concept art, high quality"
+        f"ultra detailed, fantasy art, dramatic lighting, high quality"
     )
 
     return (
         f"https://image.pollinations.ai/prompt/{prompt}"
         "?model=flux&width=1024&height=1024&enhance=true&nologo=true"
     )
+
+
+# ------------------------
+# SAFE IMAGE LOADER (CRITICAL FIX)
+# ------------------------
+
+def load_image(url):
+
+    try:
+        r = requests.get(url, timeout=10)
+
+        if r.status_code == 200 and "image" in r.headers.get("Content-Type", ""):
+            return Image.open(BytesIO(r.content))
+
+    except Exception:
+        pass
+
+    return None
 
 
 # ------------------------
@@ -168,21 +189,12 @@ if st.session_state.character:
             f"?seed={urllib.parse.quote(personality + powers)}"
         )
 
-        if st.session_state.image_url:
+        img = load_image(st.session_state.image_url) if st.session_state.image_url else None
 
-            st.image(
-                st.session_state.image_url,
-                caption="🎨 AI Character Portrait",
-                use_container_width=True
-            )
-
+        if img:
+            st.image(img, caption="🎨 AI Character Portrait", use_container_width=True)
         else:
-
-            st.image(
-                fallback_avatar,
-                caption="🎨 Fallback Avatar",
-                use_container_width=True
-            )
+            st.image(fallback_avatar, caption="🎨 Fallback Avatar", use_container_width=True)
 
     with col2:
 
@@ -224,4 +236,3 @@ if st.session_state.character:
 else:
 
     st.info("Create a character from the sidebar to begin.")
-    
