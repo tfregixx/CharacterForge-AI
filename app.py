@@ -1,4 +1,3 @@
-
 import os
 import urllib.parse
 
@@ -36,14 +35,11 @@ if "image_url" not in st.session_state:
     st.session_state.image_url = None
 
 # ------------------------
-# AI FUNCTIONS
+# AI: CHARACTER
 # ------------------------
 
-def generate_character(
-    genre,
-    personality,
-    powers
-):
+def generate_character(genre, personality, powers):
+
     prompt = f"""
 Create a detailed fictional character.
 
@@ -51,92 +47,57 @@ Genre: {genre}
 Personality: {personality}
 Powers: {powers}
 
-Generate:
-
-# Name
-# Age
-# Appearance
-# Backstory
-# Strengths
-# Weaknesses
-# Abilities
-# Catchphrase
-
-Format using markdown.
+Include:
+Name, Age, Appearance, Backstory, Strengths, Weaknesses, Abilities, Catchphrase
 """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
+        messages=[{"role": "user", "content": prompt}]
     )
 
-    content = response.choices[0].message.content
-
-    st.write("DEBUG RESPONSE:")
-    st.write(content)
-
-    return str(content)
+    return str(response.choices[0].message.content)
 
 
-def chat_with_character(
-    character_profile,
-    user_message
-):
+# ------------------------
+# AI: CHAT
+# ------------------------
+
+def chat_with_character(character_profile, user_message):
+
     prompt = f"""
-You are this character.
+You are this character:
 
-Character:
 {character_profile}
 
-Stay completely in character.
+Stay fully in character.
 
-User:
-{user_message}
+User: {user_message}
 """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
+        messages=[{"role": "user", "content": prompt}]
     )
 
-    return str(
-        response.choices[0].message.content
-    )
+    return str(response.choices[0].message.content)
 
 
-def generate_character_image_url(
-    genre,
-    personality,
-    powers
-):
+# ------------------------
+# IMAGE (POLLINATIONS FIXED)
+# ------------------------
+
+def generate_character_image_url(genre, personality, powers):
+
     prompt = urllib.parse.quote(
-        f"""
-        {genre} character portrait,
-        {personality},
-        {powers},
-        fantasy concept art,
-        highly detailed,
-        cinematic lighting,
-        digital painting,
-        masterpiece,
-        ultra realistic,
-        character sheet
-        """
+        f"{genre} warrior character portrait, "
+        f"{personality}, "
+        f"{powers}, "
+        f"fantasy concept art, ultra detailed face, cinematic lighting"
     )
 
-    return (
-        f"https://image.pollinations.ai/prompt/{prompt}"
-    )
+    return f"https://image.pollinations.ai/prompt/{prompt}?width=1024&height=1024&nologo=true"
+
 
 # ------------------------
 # SIDEBAR
@@ -148,191 +109,89 @@ with st.sidebar:
 
     genre = st.selectbox(
         "Genre",
-        [
-            "Fantasy",
-            "Sci-Fi",
-            "Anime",
-            "Cyberpunk",
-            "Superhero",
-            "Steampunk",
-            "Horror"
-        ]
+        ["Fantasy", "Sci-Fi", "Anime", "Cyberpunk", "Superhero", "Steampunk", "Horror"]
     )
 
-    personality = st.text_input(
-        "Personality",
-        "Brave and mysterious"
-    )
+    personality = st.text_input("Personality", "Brave and mysterious")
+    powers = st.text_input("Powers", "Shadow Magic")
 
-    powers = st.text_input(
-        "Powers",
-        "Shadow Magic"
-    )
+    if st.button("Generate Character", use_container_width=True):
 
-    if st.button(
-        "Generate Character",
-        use_container_width=True
-    ):
+        with st.spinner("Generating Character..."):
 
-        with st.spinner(
-            "Generating Character..."
-        ):
+            character = generate_character(genre, personality, powers)
 
-            character = generate_character(
-                genre,
-                personality,
-                powers
-            )
+            st.session_state.character = character
 
-            st.write("GENERATED:")
-            st.write(character)
-
-            st.session_state.character = str(
-                character
-            )
-
-            st.session_state.image_url = (
-                generate_character_image_url(
-                    genre,
-                    personality,
-                    powers
-                )
+            st.session_state.image_url = generate_character_image_url(
+                genre, personality, powers
             )
 
             st.session_state.chat_history = []
+
 
 # ------------------------
 # MAIN
 # ------------------------
 
 st.title("🎭 CharacterForge AI")
-
-st.caption(
-    "Generate, visualize, and chat with AI-powered characters."
-)
+st.caption("Generate, visualize, and chat with AI characters")
 
 # ------------------------
-# CHARACTER PROFILE
+# CHARACTER UI
 # ------------------------
 
 if st.session_state.character:
 
-    st.subheader(
-        "📜 Character Profile"
-    )
+    st.subheader("📜 Character Profile")
 
-    col1, col2 = st.columns(
-        [1, 2]
-    )
+    col1, col2 = st.columns([1, 2])
 
     with col1:
 
-        st.write("IMAGE URL:")
-        st.code(
-            st.session_state.image_url
+        # safer than st.image for Pollinations
+        st.markdown(
+            f'<img src="{st.session_state.image_url}" width="100%">',
+            unsafe_allow_html=True
         )
-
-        try:
-
-            st.image(
-                st.session_state.image_url,
-                caption="🎨 AI Generated Character",
-                use_container_width=True
-            )
-
-        except Exception as e:
-
-            st.warning(
-                f"Image generation unavailable: {e}"
-            )
 
     with col2:
 
-        st.write(
-            str(
-                type(
-                    st.session_state.character
-                )
-            )
-        )
-
-        st.write(
-            str(
-                st.session_state.character
-            )
-        )
-
-        st.markdown(
-            str(
-                st.session_state.character
-            )
-        )
+        st.markdown(st.session_state.character)
 
     st.download_button(
-        label="📥 Download Character",
-        data=str(
-            st.session_state.character
-        ),
-        file_name="character.txt",
-        mime="text/plain",
-        use_container_width=True
+        "📥 Download Character",
+        st.session_state.character,
+        file_name="character.txt"
     )
 
     st.divider()
 
     # ------------------------
-    # CHAT SECTION
+    # CHAT
     # ------------------------
 
-    st.subheader(
-        "💬 Chat With Character"
-    )
+    st.subheader("💬 Chat With Character")
 
-    for role, message in (
-        st.session_state.chat_history
-    ):
-
+    for role, msg in st.session_state.chat_history:
         with st.chat_message(role):
+            st.markdown(msg)
 
-            st.markdown(message)
-
-    user_input = st.chat_input(
-        "Talk to your character..."
-    )
+    user_input = st.chat_input("Talk to your character...")
 
     if user_input:
 
-        st.session_state.chat_history.append(
-            (
-                "user",
-                user_input
-            )
+        st.session_state.chat_history.append(("user", user_input))
+
+        response = chat_with_character(
+            st.session_state.character,
+            user_input
         )
 
-        with st.spinner(
-            "Character is thinking..."
-        ):
-
-            response = (
-                chat_with_character(
-                    st.session_state.character,
-                    user_input
-                )
-            )
-
-        st.session_state.chat_history.append(
-            (
-                "assistant",
-                response
-            )
-        )
+        st.session_state.chat_history.append(("assistant", response))
 
         st.rerun()
 
 else:
 
-    st.info(
-        "Create a character from the sidebar to begin."
-    )
-    
-
+    st.info("Create a character from the sidebar to begin.")
