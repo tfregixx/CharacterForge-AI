@@ -213,24 +213,25 @@ if st.session_state.character:
         [1, 2]
     )
 
-    with col1:
-        
-try:
-    st.image(
-        str(st.session_state.image_url),
-        caption="🎨 AI Generated Character",
-        use_container_width=True
-    )
+with col1:
 
-except Exception:
+    try:
 
-    st.warning(
-        "Image generation unavailable"
-    )
+        st.image(
+            str(st.session_state.image_url),
+            caption="🎨 AI Generated Character",
+            use_container_width=True
+        )
 
-    st.code(
-        st.session_state.image_url
-    )
+    except Exception:
+
+        st.warning(
+            "Image generation unavailable"
+        )
+
+        st.code(
+            st.session_state.image_url
+        )
 
     with col2:
 
