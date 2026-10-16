@@ -18,6 +18,7 @@ st.set_page_config(
 )
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+MODEL_NAME = "llama-3.1-8b-instant"
 
 # ------------------------
 # STATE
@@ -47,12 +48,17 @@ Include:
 Name, Age, Appearance, Backstory, Strengths, Weaknesses, Abilities, Catchphrase
 """
 
-    res = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]
-    )
+    try:
+        res = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8,
+            max_tokens=1000,
+        )
 
-    return str(res.choices[0].message.content)
+        return str(res.choices[0].message.content)
+    except Exception as error:
+        return f"Error generating character: {error}"
 
 
 # ------------------------
@@ -61,15 +67,20 @@ Name, Age, Appearance, Backstory, Strengths, Weaknesses, Abilities, Catchphrase
 
 def chat_with_character(character, user_message):
 
-    res = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{
-            "role": "user",
-            "content": f"You are this character:\n\n{character}\n\nUser: {user_message}"
-        }]
-    )
+    try:
+        res = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{
+                "role": "user",
+                "content": f"You are this character:\n\n{character}\n\nUser: {user_message}"
+            }],
+            temperature=0.8,
+            max_tokens=1000,
+        )
 
-    return str(res.choices[0].message.content)
+        return str(res.choices[0].message.content)
+    except Exception as error:
+        return f"Error chatting with character: {error}"
 
 
 # ------------------------
